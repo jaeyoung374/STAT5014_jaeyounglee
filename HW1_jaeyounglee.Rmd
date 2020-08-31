@@ -31,22 +31,82 @@ I feel lucky to take this class.
 ## Part B
 ### Binomial, Gamma, Beta pdfs from Casella & Berger
 
-
- 
 \begin{eqnarray}
 P(X = x | n, p) &=& {n \choose x} p^x (1-p)^{1-x}. \\
 P(X|\alpha, \beta) &=& \frac{1}{\gamma(\alpha)\beta^\alpha} x^{\alpha -1} e^{-\frac{x}{\beta}}. \\
 P(X|\alpha, \beta) &=& \frac{1}{B(\alpha, \beta)} x^{\alpha-1} (1-x)^{\beta-1}.
 \end{eqnarray} 
 
-
+\pagebreak
 
 
 # Problem 3
 
-With Rule 1, it is useful to make comments for every steps. There is no need to use rule 2 for problem 4, but in the future, it is essential not to use Excel or other programs for data manipulation. From Rule 3, it is essential to write the version of R console whenever we make different version of R code to avoid errors. Using GitHub, we can follow the rule 4. According to rule 5, it is better to record intermediate results, so that we can fix problems easily. To control randomness and show the same result, setting a random seed is important by rule 6. For readability, following rule 7 is helpful. R Markdown is useful to follow rule 8. ReadMe file is a good example for rule 9. For rule 10, GitHub is again a great tool. 
+\begin{enumerate}
+  \item Rule 1. For Every Result, Keep Track of How It Was Produced
+    \begin{itemize}
+      \item Recording every detail is important for reproducibility. 
+      \item Details such as the name and version of the program, parameters and inputs are critical.
+    \end{itemize}
+    
+  \item Rule 2. Avoid Manual Data Manipulation Steps
+    \begin{itemize}
+      \item Rely on codes, not on manual procedures such as Excel to reproduce.
+    \end{itemize}
+    
+  \item Rule 3. Archive the Exact Versions of All External Programs Used
+    \begin{itemize}
+      \item A newer version of a program may not run even without any change of inputs.
+    \end{itemize}
+    
+  \item Rule 4. Version Control All Custom Scripts
+    \begin{itemize}
+      \item Only one exact script may be able to produce that exact output.
+      \item Sometimes, backtracking to a code state is needed.
+      \item Use GitHub.
+    \end{itemize}
+    
+  \item Rule 5. Record All Intermediate Results, When Possible in Standardized Formats
+    \begin{itemize}
+      \item Looking through intermediate results can uncover discrepancies toward what is assumed, and can find bugs or faulty interpretations. 
+      \item It reveals consequences of alternative programs and parameter choices at each steps. 
+      \item It allows parts of the process to be rerun. 
+      \item One can track the steps where the problems appears. 
+      \item Without full operation, one can examine the full process. 
+    \end{itemize}
+    
+  \item Rule 6. For Analyses That Include Randomness, Note Underlying Random Seeds
+    \begin{itemize}
+      \item Providing the same random seed allows results to be reproduced exactly in future runs.
+    \end{itemize}
+    
+  \item Rule 7. Always Store Raw Data behind Plots
+    \begin{itemize}
+      \item It allows raw data for a given figure to be easily retrieved.
+      \item one can easily modify the plotting procedure, without redoing the whole analysis.
+    \end{itemize}
+    
+  \item Rule 8. Generate Hierarchical Analysis Output, Allowing Layers of Increasing Detail to Be Inspected
+    \begin{itemize}
+      \item Hypertext is the best example.
+      \item By simple clicks, we can easily view the full data underlying the summary of results with links.
+    \end{itemize}
+    
+  \item Rule 9. Connect Textual Statements to Underlying Results
+    \begin{itemize}
+      \item Connect results to the statements that are initially formulated such as notes or emails.
+      \item It is important to provide details along with your textual interpretations to the results to be tracked down in the future.
+    \end{itemize}
+    
+  \item Rule 10. Provide Public Access to Scripts, Runs, and Results
+    \begin{itemize}
+      \item All inputs, scripts, versions, parameters, and intermediate results should be provided publicly and easily accessible.
+      \item GitHub is a good tool.
+    \end{itemize}
+\end{enumerate}
 
 
+\pagebreak
 
 
 # Problem 4
