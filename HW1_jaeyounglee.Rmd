@@ -47,16 +47,19 @@ P(X|\alpha, \beta) &=& \frac{1}{B(\alpha, \beta)} x^{\alpha-1} (1-x)^{\beta-1}.
     \begin{itemize}
       \item Recording every detail is important for reproducibility. 
       \item Details such as the name and version of the program, parameters and inputs are critical.
+      \item What can be a challenge? How to write details easy to read is a challenge when we record every detail.
     \end{itemize}
     
   \item Rule 2. Avoid Manual Data Manipulation Steps
     \begin{itemize}
       \item Rely on codes, not on manual procedures such as Excel to reproduce.
+      \item What can be a challenge? From the beginning, we should get used to how to manipulate data only with codes not manually.
     \end{itemize}
     
   \item Rule 3. Archive the Exact Versions of All External Programs Used
     \begin{itemize}
       \item A newer version of a program may not run even without any change of inputs.
+      \item What can be a challenge? It is easy to think that all the newer versions work well. This step also can be included to Rule 1.
     \end{itemize}
     
   \item Rule 4. Version Control All Custom Scripts
@@ -64,6 +67,7 @@ P(X|\alpha, \beta) &=& \frac{1}{B(\alpha, \beta)} x^{\alpha-1} (1-x)^{\beta-1}.
       \item Only one exact script may be able to produce that exact output.
       \item Sometimes, backtracking to a code state is needed.
       \item Use GitHub.
+      \item What can be a challenge? One should get used to GitHub.
     \end{itemize}
     
   \item Rule 5. Record All Intermediate Results, When Possible in Standardized Formats
@@ -73,35 +77,41 @@ P(X|\alpha, \beta) &=& \frac{1}{B(\alpha, \beta)} x^{\alpha-1} (1-x)^{\beta-1}.
       \item It allows parts of the process to be rerun. 
       \item One can track the steps where the problems appears. 
       \item Without full operation, one can examine the full process. 
+      \item What can be a challenge? If one write a long function, a challenge might occur regarding rule 5.
     \end{itemize}
     
   \item Rule 6. For Analyses That Include Randomness, Note Underlying Random Seeds
     \begin{itemize}
       \item Providing the same random seed allows results to be reproduced exactly in future runs.
+      \item What can be a challenge? The codes might work only few random seeds. If one runs the code from that random seeds, the one can mislead the results from the random seeds.
     \end{itemize}
     
   \item Rule 7. Always Store Raw Data behind Plots
     \begin{itemize}
       \item It allows raw data for a given figure to be easily retrieved.
       \item one can easily modify the plotting procedure, without redoing the whole analysis.
+      \item What can be a challenge? It is not challenging but One should know which data is used for the plot. 
     \end{itemize}
     
   \item Rule 8. Generate Hierarchical Analysis Output, Allowing Layers of Increasing Detail to Be Inspected
     \begin{itemize}
       \item Hypertext is the best example.
       \item By simple clicks, we can easily view the full data underlying the summary of results with links.
+      \item What can be a challenge? Organizing the full data under hypertext might be a challenge.
     \end{itemize}
     
   \item Rule 9. Connect Textual Statements to Underlying Results
     \begin{itemize}
       \item Connect results to the statements that are initially formulated such as notes or emails.
       \item It is important to provide details along with your textual interpretations to the results to be tracked down in the future.
+      \item What can be a challenge? One should write proper ReadMe files.
     \end{itemize}
     
   \item Rule 10. Provide Public Access to Scripts, Runs, and Results
     \begin{itemize}
       \item All inputs, scripts, versions, parameters, and intermediate results should be provided publicly and easily accessible.
       \item GitHub is a good tool.
+      \item What can be a challenge? Getting used to GitHub can be hard to the beginners.
     \end{itemize}
 \end{enumerate}
 
