@@ -121,14 +121,23 @@ P(X|\alpha, \beta) &=& \frac{1}{B(\alpha, \beta)} x^{\alpha-1} (1-x)^{\beta-1}.
 
 # Problem 4
 
-```{r problem4}
+You should add some to what you are looking to do.
+
+In this problem, I first looked at the internal R datasets, chose the trees dataset and then created a summary table and plots.
+
+```{r problem4_summary}
 
 ### Problem 4 : A Scatter Plot and A Histogram ###
 
+
 # R version 4.0.2
 library(help = 'datasets')  # To get a list of the datasets
-summary(trees)              # Summary of trees data
+## there are more options to the summary function, add a caption/title, formatting, etc
+knitr::kable(summary(trees))              # Summary of trees data
 
+```
+
+```{r problem4_plots}
 ### A basic scatter plot from 'trees' data using ggplot2
 library(ggplot2)            # To use ggplot function
 ggplot(data = trees) + 
