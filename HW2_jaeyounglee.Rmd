@@ -1,0 +1,289 @@
+---
+title: "HW2_jaeyounglee"
+author: "Jaeyoung Lee"
+date: \today
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(tidyverse)
+```
+## Problem 3
+
+First of all, it is to handle a mistake. Also, one can handle various versions of a code and see the history of a code. Furthermore, using version control, it is easy to collaborate with others. This is because one can share a code and work on the cloud such as GitHub.
+
+
+
+## Problem 4
+
+For each dataset, you should perform the cleaning 2x: first with base R functions (ie no dplyr, piping, etc), second using tidyverse function.  Make sure you weave your code and text into a complete description of the process and end by creating a tidy dataset describing the variables, create a summary table of the data (summary, NOT full listing), note issues with the data, and include an informative plot.  
+
+
+a. Sensory data from five operators.
+<http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat> 
+```{r sensory_import}
+######## Sensory data ########
+# Getting "https://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat"
+url_sensory <- "https://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat"
+sensory_rawdata <- fread(url_sensory, fill = TRUE, skip = 2, data.table = FALSE)
+saveRDS(sensory_rawdata, 'sensory_rawdata.RDS')
+sensory_rawdata <- readRDS('sensory_rawdata.RDS')
+
+```
+The raw data has missing values and the categories "Items" are in the data. We need to remove them from the data.
+
+```{r sensory_base}
+# Tidy data with base R function
+matrix_sensory <- t(as.matrix(sensory_rawdata)) # Transpose the raw data
+na <- which(is.na(matrix_sensory==TRUE))        # Find the indexes of Missing value
+
+# The indexes where Item numbers are in the data
+x <- 1
+item <- x
+for (i in 1:9){
+  x <- x+18
+  item <- c(item, x)
+}
+
+# Remove missing values and Item numbers from the data
+# To focus on items, transpose the data table and rename the column names
+sensory_data <- t(matrix(matrix_sensory[-c(na,item)], byrow = T, nrow = 10))
+sensory_data <- data.table(sensory_data)
+colnames(sensory_data) <- paste('Item', 1:10)
+Opr <- rep(paste('Opr', 1:5), 3)
+sensory_data <- cbind(Opr,sensory_data)
+sensory_data <- sensory_data[order(sensory_data$Opr)]
+
+```
+Above is the converted tidy data frames using the base R functions. A summary of the data is as follows:
+
+```{r summary_sensory_base, echo = FALSE}
+knitr::kable(summary(sensory_data))
+```
+
+```{r sensory_tidyverse}
+# Sensory data with tidyverse package
+matrix_sensory <- sensory_rawdata %>% as.matrix() %>% t() # Transpose the raw data
+na <- which(is.na(matrix_sensory==TRUE))        # Find the indexes of Missing value
+
+# The indexes where Item numbers are in the data
+x <- 1
+item <- x
+for (i in 1:9){
+  x <- x+18
+  item <- c(item, x)
+}
+
+# Remove missing values and Item numbers from the data
+# To focus on items, transpose the data table and rename the column names
+sensory_data <- matrix_sensory[-c(na,item)] %>% matrix(byrow = T, nrow = 10) %>% t()
+sensory_data <- data.table(sensory_data)
+Opr <- rep(paste('Opr', 1:5), 3)
+sensory_data <- bind_cols(Opr,sensory_data)
+colnames(sensory_data) <- c('Opr',paste('Item', 1:10))
+sensory_data <- sensory_data[order(sensory_data$Opr)]
+
+
+```
+The summary of the data converted by tidyverse is as follows.
+```{r summary_sensory_tidayverse, echo = FALSE}
+knitr::kable(summary(sensory_data))
+```
+
+
+
+b. Gold Medal performance for Olympic Men's Long Jump, year is coded as 1900=0.  
+<http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/LongJumpData.dat>  
+
+```{r medal_import}
+######## Long Jump data ########
+# Getting "http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/LongJumpData.dat"
+url_medal <- "http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/LongJumpData.dat"
+medal_rawdata <- fread(url_medal)
+saveRDS(medal_rawdata, 'medal_rawdata.RDS')
+medal_rawdata <- readRDS('medal_rawdata.RDS')
+
+```
+The raw data has missing values and wide type data. It is better to covert into long type data.
+Also, we need to vectors : 'Year' and 'Long Jump'.
+
+
+```{r medal_base}
+# Tidy data by base R function
+# Year is coded as 1900 = 0
+# Combine year and long jump into two vectors
+year <- c(medal_rawdata[[1]], medal_rawdata[[3]], medal_rawdata[[5]], medal_rawdata[[7]]) + 1900
+longjump <- c(medal_rawdata[[2]], medal_rawdata[[4]], medal_rawdata[[6]], medal_rawdata[[8]])
+
+# Bind the vectors as a data table and rename the categories
+medal_data <- data.table(year[1:(length(year)-2)], longjump[1:(length(longjump)-2)])
+colnames(medal_data) <- c('Year', 'Long Jump')
+
+```
+Above is the converted tidy data frames using the base R functions. A summary of the data is as follows:
+
+```{r summary_medal_base, echo = FALSE}
+knitr::kable(summary(medal_data))
+```
+
+
+```{r medal_tidyverse}
+# Using tidyverse 
+# Year is coded as 1900 = 0
+# Combine year and long jump into two vectors
+medal_data <- medal_rawdata[,1:8]
+colnames(medal_data) <- paste(rep(c('Year', 'Jump'),4), rep(1:4,each = 2))
+year <- medal_data[,c(1,3,5,7)] %>% gather(key = 'name1', value = 'Year', 1,2,3,4) %>% filter(Year != na)
+year[,2] <- year[,2] + 1900
+jump <- medal_data[,c(2,4,6,8)] %>% gather(key = 'name2', value = 'LongJump', 1,2,3,4) %>% filter(LongJump != na)
+
+# Bind the vectors as a data table and rename the categories
+medal_data <- bind_cols(year[,2], jump[,2])
+colnames(medal_data) <- c('Year', 'Long Jump')
+
+```
+The summary of the data converted by tidyverse is as follows.
+
+```{r summary_medal_tidyverse, echo = FALSE}
+knitr::kable(summary(medal_data))
+```
+
+
+
+
+
+
+
+c. Brain weight (g) and body weight (kg) for 62 species.    
+<http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BrainandBodyWeight.dat>  
+
+```{r brain_import}
+######## Brain weight data ########
+# Getting "http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BrainandBodyWeight.dat"
+url_brain <- "http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BrainandBodyWeight.dat"
+brain_rawdata <- fread(url_brain)
+saveRDS(brain_rawdata, 'brain_rawdata.RDS')
+brain_rawdata <- readRDS('brain_rawdata.RDS')
+```
+
+The data needs two columns which are 'Body Wt' and 'Brain Wt'.
+
+```{r brain_base}
+# Tidy data with base R function
+bodywt <- c(brain_rawdata[[1]], brain_rawdata[[3]], brain_rawdata[[5]])
+brainwt <- c(brain_rawdata[[2]], brain_rawdata[[4]], brain_rawdata[[6]])
+
+brain_data <- data.table(bodywt[-length(bodywt)], brainwt[-length(brainwt)])
+colnames(brain_data) <- c('Body Wt', 'Brain Wt')
+```
+Above is the converted tidy data frames using the base R functions. A summary of the data is as follows:
+
+```{r summary_brain_base, echo = FALSE}
+knitr::kable(summary(brain_data))
+```
+
+```{r brain_tidyverse}
+# Tidy data with tidyverse
+brain_data <- brain_rawdata[,1:6]
+colnames(brain_data) <- paste(rep(c('bw', 'brw'),3), rep(1:3,each = 2))
+bw <- brain_data[,c(1,3,5)] %>% gather(key = 'name1', value = 'BW', 1,2,3) 
+brw <- brain_data[,c(2,4,6)] %>% gather(key = 'name2', value = 'BRW', 1,2,3) 
+
+# Bind the vectors as a data table and rename the categories
+brain_data <- bind_cols(bw[,2], brw[,2])
+colnames(brain_data) <- c('Body Wt', 'Brain Wt')
+
+
+```
+
+The summary of the data converted by tidyverse is as follows.
+
+```{r summary_brain_tidyverse, echo = FALSE}
+knitr::kable(summary(brain_data))
+```
+
+
+d. Triplicate measurements of tomato yield for two varieties of tomatos at three planting densities.  
+<http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/tomato.dat>  
+```{r tomato_import} 
+######## Tomato data ########
+# Getting "http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/tomato.dat"
+url_tomato <- "http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/tomato.dat"
+tomato_rawdata <- fread(url_tomato, skip = 1)
+saveRDS(tomato_rawdata, 'tomato_rawdata.RDS')
+tomato_rawdata <- readRDS('tomato_rawdata.RDS')
+
+```
+The data above should split the values. 
+
+```{r tomato_base}
+# Tidy data with base R function
+# Need to split the values
+cells <- strsplit(unlist(tomato_rawdata), split = ',', fixed = T) # split the data
+categories <- unlist(c(cells[1],cells[2]))  # two categories
+values <- as.numeric(unlist(c(cells[3:8]))) # numerical data
+
+# Combine into data frame
+tomato_matrix <- matrix(values, byrow = T, ncol = 3)
+tomato_matrix <- t(cbind(tomato_matrix[1:2,], tomato_matrix[3:4,], tomato_matrix[5:6,]))
+tomato_data <- data.frame(tomato_matrix, as.character(rep(c(10000,20000,30000)), each=3))
+colnames(tomato_data) <- c(categories, 'Density')
+
+
+```
+Above is the converted tidy data frames using the base R functions. A summary of the data is as follows:
+
+```{r summary_tomato_base, echo = FALSE}
+knitr::kable(summary(tomato_data))
+```
+
+
+
+
+```{r tomato_tidyverse}
+# Using tidyverse
+tomato_data <- tomato_rawdata[,-1] %>% 
+  separate(col = '10000', into = c("1","2","3"), sep = ",", convert = T) %>%
+  separate(col = '20000', into = c("4","5","6"), sep = ",", convert = T) %>%
+  separate(col = '30000', into = c("7","8","9"), sep = ",", convert = T) %>% 
+  as.matrix() %>% t()
+dens <- rep(c(10000,20000,30000), each = 3)
+
+tomato_data <- tomato_data %>% cbind(dens) %>% as.data.table()
+colnames(tomato_data) <- tomato_rawdata[,1] %>% unlist() %>% c("Density")
+
+```
+
+
+```{r summary_tomato_tidyverse, echo = FALSE}
+knitr::kable(summary(tomato_data))
+```
+
+
+
+## Problem 5
+
+Finish this homework by pushing your changes to your repo.  In general, your workflow for this should be:  
+
+1. git pull -- to make sure you have the most recent repo  
+2. In R: do some work  
+3. git add -- this tells git to track new files  
+4. git commit -- make message INFORMATIVE and USEFUL  
+5. git push -- this pushes your local changes to the repo  
+
+If you have difficulty with steps 1-5, git is not correctly or completely setup.  See me for help.
+
+**Only submit the .Rmd and .pdf solution files.  Names should be formatted HW2_lastname.Rmd and HW2_lastname.pdf**
+
+## Optional preperation for next class:  
+
+TBD
+
+
+## Appendix
+```{r Appendix, ref.label=c("setup","sensory_import", "sensory_base", "summary_sensory_base", "sensory_tidyverse", "summary_sensory_tidayverse", "medal_import", "medal_base", "summary_medal_base", "medal_tidyverse", "summary_medal_tidayverse", "brain_import", "brain_base", "summary_brain_base", "brain_tidyverse", "summary_brain_tidayverse", "tomato_import", "tomato_base", "summary_tomato_base", "tomato_tidyverse", "summary_tomato_tidayverse"), echo=TRUE, eval=FALSE, tidy=FALSE, include=T}
+  
+```
+
