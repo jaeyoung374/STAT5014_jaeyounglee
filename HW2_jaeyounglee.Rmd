@@ -66,11 +66,11 @@ head(sensory_data_base)
 Above is the converted tidy data frames using the base R functions only. A summary of the data is as follows:
 
 ```{r summary_sensory_base, echo = FALSE}
+# Summary of the data
 knitr::kable(summary(sensory_data_base))
 ```
 
 \pagebreak
-
 
 Now, handle the same data with `tidyverse` package.
 
@@ -101,18 +101,19 @@ sensory_data_tidyverse %>% head()
 
 ```
 
-\pagebreak
-
 The result by tidyverse is the same with the base R function. The summary of the data converted by tidyverse is as follows.
 
 ```{r summary_sensory_tidayverse, echo = FALSE}
+# Summary of the data
 knitr::kable(summary(sensory_data_tidyverse))
 ```
+
+\pagebreak
 
 Here are box plots and histograms of the sensory data using both base R functions and tidyverse. 
 
 ```{r sensory_plots, echo = FALSE}
-# box plots for item 1 to 4
+# box plots and histograms
 base_boxplot <- ggplot(sensory_data_base, aes(x=Opr, y= sensory_data_base$Values)) + 
   geom_boxplot(fill = 'gray') + 
   labs(title="Box plot with Base R function",x="Operators", y = "Values")
@@ -136,6 +137,7 @@ ggarrange(base_boxplot, base_hist, tidy_boxplot, tidy_hist, ncol = 2, nrow = 2)
 ```
 
 
+\pagebreak
 
 
 b. Gold Medal performance for Olympic Men's Long Jump, year is coded as 1900=0.  
@@ -176,6 +178,7 @@ head(medal_data_base)
 Above is the converted tidy data frames using the base R functions. A summary of the data is as follows:
 
 ```{r summary_medal_base, echo = FALSE}
+# Summary of the data
 knitr::kable(summary(medal_data_base))
 ```
 
@@ -210,6 +213,7 @@ medal_data_tidyverse %>% head()
 The result by tidyverse is the same with the base R function. The summary of the data converted by tidyverse is as follows.
 
 ```{r summary_medal_tidyverse, echo = FALSE}
+# Summary of the data
 knitr::kable(summary(medal_data_tidyverse))
 ```
 
@@ -268,6 +272,7 @@ head(brain_data_base)
 Above is the converted tidy data frames using the base R functions. A summary of the data is as follows:
 
 ```{r summary_brain_base, echo = FALSE}
+# Summary of the data
 knitr::kable(summary(brain_data_base))
 ```
 
@@ -300,6 +305,7 @@ brain_data_tidyverse %>% head()
 The result by tidyverse is the same with the base R function. The summary of the data converted by tidyverse is as follows.
 
 ```{r summary_brain_tidyverse, echo = FALSE}
+# Summary of the data
 knitr::kable(summary(brain_data_tidyverse))
 ```
 
@@ -382,6 +388,7 @@ tomato_data_base
 Above is the converted tidy data frames using the base R functions. A summary of the data is as follows:
 
 ```{r summary_tomato_base, echo = FALSE}
+# Summary of the data
 knitr::kable(summary(tomato_data_base))
 ```
 
@@ -409,6 +416,7 @@ tomato_data_tidyverse
 
 
 ```{r summary_tomato_tidyverse, echo = FALSE}
+# Summary of the data
 knitr::kable(summary(tomato_data_tidyverse))
 ```
 
