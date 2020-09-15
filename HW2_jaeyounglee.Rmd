@@ -51,15 +51,12 @@ for (i in 1:9){
 }
 
 # Remove missing values and 'Item's from the data
-sensory_data <- t(matrix(matrix_sensory[-c(na,item)], byrow = T, nrow = 10))  
-sensory_data <- data.table(sensory_data)                                      
-colnames(sensory_data) <- paste('Item', 1:10) # Assign column names
-Opr <- rep(paste('Opr', 1:5), 3)              # Operator names
-sensory_data <- cbind(Opr,sensory_data)       # Bind Operator names and the data
+Values <- matrix_sensory[-c(na,item)]
 
-# Re-order the rows by names of operators
-sensory_data <- sensory_data[order(sensory_data$Opr)]                         
-sensory_data_base <- sensory_data
+# Combine the values with 'Item' and 'Operator' columns
+Item <- rep(paste('Item', 1:10), each = 15)   # Item names
+Opr <- rep(paste('Opr', 1:5), 30)             # Operator names
+sensory_data_base <- data.table(Item, Opr, Values)
 
 # Final tidy data with base R functions
 head(sensory_data_base)
@@ -81,7 +78,7 @@ Now, handle the same data with `tidyverse` package.
 # Sensory data with tidyverse package
 # Making matrix which is the same with base R function but using pipes.
 matrix_sensory <- sensory_rawdata %>% as.matrix() %>% t() 
-na <- which(is.na(matrix_sensory==TRUE))     # Find missing values
+na <- is.na(matrix_sensory==TRUE) %>% which()     # Find missing values
 
 # The indexes where Item numbers are in the data
 x <- 1
@@ -92,15 +89,12 @@ for (i in 1:9){
 }
 
 # Remove missing values and Item numbers from the data
-sensory_data <- matrix_sensory[-c(na,item)] %>% matrix(byrow = T, nrow = 10) %>% t()
-sensory_data <- data.table(sensory_data)
-Opr <- rep(paste('Opr', 1:5), 3)
-sensory_data <- bind_cols(Opr,sensory_data) # bind operators and data
-colnames(sensory_data) <- c('Opr',paste('Item', 1:10))
+Values <- matrix_sensory[-c(na,item)]
 
-# Re-order the rows by names of operators
-sensory_data <- sensory_data[order(sensory_data$Opr)] 
-sensory_data_tidyverse <- sensory_data
+# Bind the values with 'Item' and 'Operator' columns
+Item <- paste('Item', 1:10) %>% rep(each = 15)   # Item names
+Opr <- paste('Opr', 1:5) %>% rep(30)             # Operator names
+sensory_data_tidyverse <- data.table(Item, Opr, Values)
 
 # Final tidy data with tidyverse
 sensory_data_tidyverse %>% head()
@@ -115,62 +109,33 @@ The result by tidyverse is the same with the base R function. The summary of the
 knitr::kable(summary(sensory_data_tidyverse))
 ```
 
-Here are some box plots of the sensory data. Gray plots are based on base R functions and green ones are from tidyverse.
+Here are box plots and histograms of the sensory data using both base R functions and tidyverse. 
 
-```{r sensory_plots1, echo = FALSE}
+```{r sensory_plots, echo = FALSE}
 # box plots for item 1 to 4
-base_item1 <- ggplot(sensory_data_base, aes(x=Opr, y= sensory_data_base[[2]])) + 
+base_boxplot <- ggplot(sensory_data_base, aes(x=Opr, y= sensory_data_base$Values)) + 
   geom_boxplot(fill = 'gray') + 
-  labs(title="Box plot of Item 1",x="Operators", y = "Item 1")
+  labs(title="Box plot with Base R function",x="Operators", y = "Values")
 
-base_item2 <- ggplot(sensory_data_base, aes(x=Opr, y= sensory_data_base[[3]])) + 
-  geom_boxplot(fill = 'gray') + 
-  labs(title="Box plot of Item 2",x="Operators", y = "Item 2")
+base_hist = ggplot(sensory_data_base, aes(x=Values)) + 
+  geom_histogram(binwidth = 1, fill=I("cornflowerblue"), col = I("black")) +
+  labs(title = 'Histogram with Base R')
 
-base_item3 <- ggplot(sensory_data_base, aes(x=Opr, y= sensory_data_base[[4]])) + 
-  geom_boxplot(fill = 'gray') + 
-  labs(title="Box plot of Item 3",x="Operators", y = "Item 3")
+tidy_boxplot <- ggplot(sensory_data_tidyverse, 
+                       aes(x=Opr, y= sensory_data_base$Values)) + 
+  geom_boxplot(fill = 'white') + 
+  labs(title="Box plot with tidyverse",x="Operators", y = "Values")
 
-base_item4 <- ggplot(sensory_data_base, aes(x=Opr, y= sensory_data_base[[5]])) + 
-  geom_boxplot(fill = 'gray') + 
-  labs(title="Box plot of Item 4",x="Operators", y = "Item 4")
+tidy_hist = ggplot(sensory_data_tidyverse, aes(x=Values)) + 
+  geom_histogram(binwidth = 1, fill=I("gold"), col = I("black")) +
+  labs(title = 'Histogram with tidyverse')
 
-ggarrange(base_item1, base_item2, base_item3, base_item4, ncol = 2, nrow = 2)
+
+ggarrange(base_boxplot, base_hist, tidy_boxplot, tidy_hist, ncol = 2, nrow = 2)
 
 ```
 
 
-```{r sensory_plots2, echo = FALSE}
-tidy_item5 <- ggplot(sensory_data_tidyverse, aes(x=Opr, y= sensory_data_base[[6]])) + 
-  geom_boxplot(fill = 'chartreuse3') + 
-  labs(title="Box plot of Item 5",x="Operators", y = "Item 5")
-
-tidy_item6 <- ggplot(sensory_data_tidyverse, aes(x=Opr, y= sensory_data_base[[7]])) + 
-  geom_boxplot(fill = 'chartreuse3') + 
-  labs(title="Box plot of Item 6",x="Operators", y = "Item 6")
-
-tidy_item7 <- ggplot(sensory_data_tidyverse, aes(x=Opr, y= sensory_data_base[[8]])) + 
-  geom_boxplot(fill = 'chartreuse3') + 
-  labs(title="Box plot of Item 7",x="Operators", y = "Item 7")
-
-tidy_item8 <- ggplot(sensory_data_tidyverse, aes(x=Opr, y= sensory_data_base[[9]])) + 
-  geom_boxplot(fill = 'chartreuse3') + 
-  labs(title="Box plot of Item 8",x="Operators", y = "Item 8")
-
-ggarrange(tidy_item5, tidy_item6, tidy_item7, tidy_item8, ncol = 2, nrow = 2)
-```
-
-```{r sensory_plots3, echo = FALSE}
-base_item9 <- ggplot(sensory_data_base, aes(x=Opr, y= sensory_data_base[[10]])) + 
-  geom_boxplot(fill = 'gray') + 
-  labs(title="Box plot of Item 9",x="Operators", y = "Item 9")
-
-tidy_item10 <- ggplot(sensory_data_tidyverse, aes(x=Opr, y= sensory_data_base[[11]])) + 
-  geom_boxplot(fill = 'chartreuse3') +
-  labs(title="Box plot of Item 10",x="Operators", y = "Item 10")
-
-ggarrange(base_item9, tidy_item10, ncol = 2, nrow = 1)
-```
 
 
 b. Gold Medal performance for Olympic Men's Long Jump, year is coded as 1900=0.  
@@ -479,7 +444,7 @@ ggarrange(hist_ife_base, hist_pusa_base,
 
 
 ## Appendix
-```{r Appendix, ref.label=c("setup","sensory_import", "sensory_base", "summary_sensory_base", "sensory_tidyverse", "summary_sensory_tidayverse", "sensory_plots1", "sensory_plots2", "sensory_plots3", "medal_import", "medal_base", "summary_medal_base", "medal_tidyverse",  "summary_medal_tidayverse", "medal_plots", "brain_import", "brain_base", "summary_brain_base", "brain_tidyverse", "summary_brain_tidayverse", "brain_plots", "tomato_import", "tomato_base", "summary_tomato_base", "tomato_tidyverse", "summary_tomato_tidayverse", "tomato_plots"), echo=TRUE, eval=FALSE, tidy=FALSE, include=T}
+```{r Appendix, ref.label=c("setup","sensory_import", "sensory_base", "summary_sensory_base", "sensory_tidyverse", "summary_sensory_tidayverse", "sensory_plots", "medal_import", "medal_base", "summary_medal_base", "medal_tidyverse",  "summary_medal_tidayverse", "medal_plots", "brain_import", "brain_base", "summary_brain_base", "brain_tidyverse", "summary_brain_tidayverse", "brain_plots", "tomato_import", "tomato_base", "summary_tomato_base", "tomato_tidyverse", "summary_tomato_tidayverse", "tomato_plots"), echo=TRUE, eval=FALSE, tidy=FALSE, include=T}
   
 ```
 
