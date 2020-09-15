@@ -72,6 +72,9 @@ Above is the converted tidy data frames using the base R functions only. A summa
 knitr::kable(summary(sensory_data_base))
 ```
 
+\pagebreak
+
+
 Now, handle the same data with `tidyverse` package.
 
 ```{r sensory_tidyverse}
@@ -103,6 +106,8 @@ sensory_data_tidyverse <- sensory_data
 sensory_data_tidyverse %>% head()
 
 ```
+
+\pagebreak
 
 The result by tidyverse is the same with the base R function. The summary of the data converted by tidyverse is as follows.
 
@@ -209,6 +214,8 @@ Above is the converted tidy data frames using the base R functions. A summary of
 knitr::kable(summary(medal_data_base))
 ```
 
+\pagebreak
+
 Now, handle the same data with `tidyverse` package.
 
 ```{r medal_tidyverse}
@@ -241,6 +248,8 @@ The result by tidyverse is the same with the base R function. The summary of the
 knitr::kable(summary(medal_data_tidyverse))
 ```
 
+\pagebreak
+
 As informative plots, line plots are used.
 
 ```{r medal_plots, echo = FALSE}
@@ -256,6 +265,10 @@ medal_tidyverse_plot <- ggplot(data = medal_data_tidyverse, aes(x = Year, y= Lon
 ggarrange(medal_base_plot, medal_tidyverse_plot, ncol = 1, nrow = 2)
 
 ```
+
+
+\pagebreak
+
 
 c. Brain weight (g) and body weight (kg) for 62 species.    
 <http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BrainandBodyWeight.dat>  
@@ -293,6 +306,8 @@ Above is the converted tidy data frames using the base R functions. A summary of
 knitr::kable(summary(brain_data_base))
 ```
 
+\pagebreak
+
 Now, handle the same data with `tidyverse` package.
 
 ```{r brain_tidyverse}
@@ -302,8 +317,10 @@ brain_data <- brain_rawdata[,1:6]
 
 # Extracting 'Year' columns and 'Long Jump' columns and remove missing values
 colnames(brain_data) <- paste(rep(c('bw', 'brw'),3), rep(1:3,each = 2))
-bw <- brain_data[,c(1,3,5)] %>% gather(key = 'name1', value = 'BW', 1,2,3) %>% filter(BW != na)
-brw <- brain_data[,c(2,4,6)] %>% gather(key = 'name2', value = 'BRW', 1,2,3) %>% filter(BRW != na)
+bw <- brain_data[,c(1,3,5)] %>% gather(key = 'name1', value = 'BW', 1,2,3) %>% 
+  filter(BW != na)
+brw <- brain_data[,c(2,4,6)] %>% gather(key = 'name2', value = 'BRW', 1,2,3) %>% 
+  filter(BRW != na)
 
 # Bind the vectors as a data table and rename the categories
 brain_data <- bind_cols(bw[,2], brw[,2])
@@ -320,6 +337,8 @@ The result by tidyverse is the same with the base R function. The summary of the
 ```{r summary_brain_tidyverse, echo = FALSE}
 knitr::kable(summary(brain_data_tidyverse))
 ```
+
+\pagebreak
 
 As informative plots, scatter plots are used.
 
@@ -357,7 +376,7 @@ ggarrange(brain_base_plot, brain_tidyverse_plot,
 
 
 
-
+\pagebreak
 
 
 
@@ -428,6 +447,8 @@ tomato_data_tidyverse
 knitr::kable(summary(tomato_data_tidyverse))
 ```
 
+\pagebreak
+
 Here are the histograms of above data based on both base R and tidyverse.
 
 ```{r tomato_plots, echo = FALSE}
@@ -450,10 +471,11 @@ hist_pusa_tidyverse = ggplot(tomato_data_tidyverse, aes(x=PusaEarlyDwarf)) +
   labs(title = 'Using tidyverse')
 
 
-ggarrange(hist_ife_base, hist_pusa_base, hist_ife_tidyverse, hist_pusa_tidyverse, ncol = 2, nrow = 2)
+ggarrange(hist_ife_base, hist_pusa_base, 
+          hist_ife_tidyverse, hist_pusa_tidyverse, ncol = 2, nrow = 2)
 
 ```
-
+\pagebreak
 
 
 ## Appendix
