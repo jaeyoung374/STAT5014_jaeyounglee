@@ -9,6 +9,8 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 library(data.table)
 library(tidyverse)
+library(ggplot2)
+library(ggpubr)
 ```
 ## Problem 3
 
@@ -17,9 +19,6 @@ First of all, it is to handle a mistake. Also, one can handle various versions o
 
 
 ## Problem 4
-
-For each dataset, you should perform the cleaning 2x: first with base R functions (ie no dplyr, piping, etc), second using tidyverse function.  Make sure you weave your code and text into a complete description of the process and end by creating a tidy dataset describing the variables, create a summary table of the data (summary, NOT full listing), note issues with the data, and include an informative plot.  
-
 
 a. Sensory data from five operators.
 <http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat> 
@@ -63,7 +62,7 @@ sensory_data <- sensory_data[order(sensory_data$Opr)]
 sensory_data_base <- sensory_data
 
 # Final tidy data with base R functions
-sensory_data_base
+head(sensory_data_base)
 
 ```
 
@@ -101,7 +100,7 @@ sensory_data <- sensory_data[order(sensory_data$Opr)]
 sensory_data_tidyverse <- sensory_data
 
 # Final tidy data with tidyverse
-sensory_data_tidyverse
+sensory_data_tidyverse %>% head()
 
 ```
 
@@ -111,6 +110,62 @@ The result by tidyverse is the same with the base R function. The summary of the
 knitr::kable(summary(sensory_data_tidyverse))
 ```
 
+Here are some box plots of the sensory data. Gray plots are based on base R functions and green ones are from tidyverse.
+
+```{r sensory_plots1, echo = FALSE}
+# box plots for item 1 to 4
+base_item1 <- ggplot(sensory_data_base, aes(x=Opr, y= sensory_data_base[[2]])) + 
+  geom_boxplot(fill = 'gray') + 
+  labs(title="Box plot of Item 1",x="Operators", y = "Item 1")
+
+base_item2 <- ggplot(sensory_data_base, aes(x=Opr, y= sensory_data_base[[3]])) + 
+  geom_boxplot(fill = 'gray') + 
+  labs(title="Box plot of Item 2",x="Operators", y = "Item 2")
+
+base_item3 <- ggplot(sensory_data_base, aes(x=Opr, y= sensory_data_base[[4]])) + 
+  geom_boxplot(fill = 'gray') + 
+  labs(title="Box plot of Item 3",x="Operators", y = "Item 3")
+
+base_item4 <- ggplot(sensory_data_base, aes(x=Opr, y= sensory_data_base[[5]])) + 
+  geom_boxplot(fill = 'gray') + 
+  labs(title="Box plot of Item 4",x="Operators", y = "Item 4")
+
+ggarrange(base_item1, base_item2, base_item3, base_item4, ncol = 2, nrow = 2)
+
+```
+
+
+```{r sensory_plots2, echo = FALSE}
+tidy_item5 <- ggplot(sensory_data_tidyverse, aes(x=Opr, y= sensory_data_base[[6]])) + 
+  geom_boxplot(fill = 'chartreuse3') + 
+  labs(title="Box plot of Item 5",x="Operators", y = "Item 5")
+
+tidy_item6 <- ggplot(sensory_data_tidyverse, aes(x=Opr, y= sensory_data_base[[7]])) + 
+  geom_boxplot(fill = 'chartreuse3') + 
+  labs(title="Box plot of Item 6",x="Operators", y = "Item 6")
+
+tidy_item7 <- ggplot(sensory_data_tidyverse, aes(x=Opr, y= sensory_data_base[[8]])) + 
+  geom_boxplot(fill = 'chartreuse3') + 
+  labs(title="Box plot of Item 7",x="Operators", y = "Item 7")
+
+tidy_item8 <- ggplot(sensory_data_tidyverse, aes(x=Opr, y= sensory_data_base[[9]])) + 
+  geom_boxplot(fill = 'chartreuse3') + 
+  labs(title="Box plot of Item 8",x="Operators", y = "Item 8")
+
+ggarrange(tidy_item5, tidy_item6, tidy_item7, tidy_item8, ncol = 2, nrow = 2)
+```
+
+```{r sensory_plots3, echo = FALSE}
+base_item9 <- ggplot(sensory_data_base, aes(x=Opr, y= sensory_data_base[[10]])) + 
+  geom_boxplot(fill = 'gray') + 
+  labs(title="Box plot of Item 9",x="Operators", y = "Item 9")
+
+tidy_item10 <- ggplot(sensory_data_tidyverse, aes(x=Opr, y= sensory_data_base[[11]])) + 
+  geom_boxplot(fill = 'chartreuse3') +
+  labs(title="Box plot of Item 10",x="Operators", y = "Item 10")
+
+ggarrange(base_item9, tidy_item10, ncol = 2, nrow = 1)
+```
 
 
 b. Gold Medal performance for Olympic Men's Long Jump, year is coded as 1900=0.  
@@ -140,11 +195,11 @@ longjump <- c(medal_rawdata[[2]], medal_rawdata[[4]],
 # Bind the vectors as a data table and rename the categories
 medal_data <- data.table(year[1:(length(year)-2)], 
                          longjump[1:(length(longjump)-2)])
-colnames(medal_data) <- c('Year', 'Long Jump')
+colnames(medal_data) <- c('Year', 'LongJump')
 medal_data_base <- medal_data
 
 # Final tidy data with base R functions
-medal_data_base
+head(medal_data_base)
 
 ```
 
@@ -161,7 +216,7 @@ Now, handle the same data with `tidyverse` package.
 # Year is coded as 1900 = 0
 medal_data <- medal_rawdata[,1:8] # remove missing values only columns
 
-# Extracting 'Year' columns and 'Long Jump' columns
+# Extracting 'Year' columns and 'Long Jump' columns and remove missing values
 colnames(medal_data) <- paste(rep(c('Year', 'Jump'),4), rep(1:4,each = 2))
 year <- medal_data[,c(1,3,5,7)] %>% 
   gather(key = 'name1', value = 'Year', 1,2,3,4) %>% filter(Year != na)
@@ -171,11 +226,11 @@ jump <- medal_data[,c(2,4,6,8)] %>%
 
 # Bind the vectors as a data table and rename the categories
 medal_data <- bind_cols(year[,2], jump[,2])
-colnames(medal_data) <- c('Year', 'Long Jump')
+colnames(medal_data) <- c('Year', 'LongJump')
 medal_data_tidyverse <- medal_data
 
 # Final tidy data with tidyverse
-medal_data_tidyverse
+medal_data_tidyverse %>% head()
 
 
 ```
@@ -186,11 +241,21 @@ The result by tidyverse is the same with the base R function. The summary of the
 knitr::kable(summary(medal_data_tidyverse))
 ```
 
+As informative plots, line plots are used.
 
+```{r medal_plots, echo = FALSE}
+# Plot of Long Jump by Years
+medal_base_plot <- ggplot(data = medal_data_base, aes(x = Year, y= LongJump)) + 
+  geom_line(col = 'brown') + 
+  labs(title = 'Plot of Long Jump by Years with Base R')
 
+medal_tidyverse_plot <- ggplot(data = medal_data_tidyverse, aes(x = Year, y= LongJump)) + 
+  geom_line(col = 'cornflowerblue') + 
+  labs(title = 'Plot of Long Jump by Years with tidyverse')
 
+ggarrange(medal_base_plot, medal_tidyverse_plot, ncol = 1, nrow = 2)
 
-
+```
 
 c. Brain weight (g) and body weight (kg) for 62 species.    
 <http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/BrainandBodyWeight.dat>  
@@ -214,11 +279,11 @@ brainwt <- c(brain_rawdata[[2]], brain_rawdata[[4]], brain_rawdata[[6]])
 
 # Remove missing values
 brain_data <- data.table(bodywt[-length(bodywt)], brainwt[-length(brainwt)])
-colnames(brain_data) <- c('Body Wt', 'Brain Wt')
+colnames(brain_data) <- c('Body_Wt', 'Brain_Wt')
 brain_data_base <- brain_data
 
 # Final tidy data with base R functions
-brain_data_base
+head(brain_data_base)
 
 ```
 
@@ -235,18 +300,18 @@ Now, handle the same data with `tidyverse` package.
 # Remove vectors which have only missing values
 brain_data <- brain_rawdata[,1:6]
 
-# Extracting 'Year' columns and 'Long Jump' columns
+# Extracting 'Year' columns and 'Long Jump' columns and remove missing values
 colnames(brain_data) <- paste(rep(c('bw', 'brw'),3), rep(1:3,each = 2))
-bw <- brain_data[,c(1,3,5)] %>% gather(key = 'name1', value = 'BW', 1,2,3) 
-brw <- brain_data[,c(2,4,6)] %>% gather(key = 'name2', value = 'BRW', 1,2,3) 
+bw <- brain_data[,c(1,3,5)] %>% gather(key = 'name1', value = 'BW', 1,2,3) %>% filter(BW != na)
+brw <- brain_data[,c(2,4,6)] %>% gather(key = 'name2', value = 'BRW', 1,2,3) %>% filter(BRW != na)
 
 # Bind the vectors as a data table and rename the categories
 brain_data <- bind_cols(bw[,2], brw[,2])
-colnames(brain_data) <- c('Body Wt', 'Brain Wt')
+colnames(brain_data) <- c('Body_Wt', 'Brain_Wt')
 brain_data_tidyverse <- brain_data
 
 # Final tidy data with tidyverse
-brain_data_tidyverse
+brain_data_tidyverse %>% head()
 
 ```
 
@@ -255,6 +320,46 @@ The result by tidyverse is the same with the base R function. The summary of the
 ```{r summary_brain_tidyverse, echo = FALSE}
 knitr::kable(summary(brain_data_tidyverse))
 ```
+
+As informative plots, scatter plots are used.
+
+```{r brain_plots, echo = FALSE}
+# Scatter plots of "Body Wt" and "Brain Wt"
+brain_base_plot <- 
+  ggplot(data = brain_data_base, aes(x = Body_Wt, y= Brain_Wt)) +
+  geom_point(col = 'brown', size = 3, shape = 19) +
+  labs(title = 'Using base')
+
+brain_tidyverse_plot <-   
+  ggplot(data = brain_data_tidyverse, aes(x = Body_Wt, y= Brain_Wt)) +
+  geom_point(col = 'cornflowerblue', size = 3, shape = 19) +
+  labs(title = 'Using tidyverse')
+
+# Scatter plots without outliers
+brain_base_plot_wo_outlier <-   
+  ggplot(data = brain_data_base[-c(19,33),], aes(x = Body_Wt, y= Brain_Wt)) +
+  geom_point(col = 'brown', size = 3, shape = 19) +
+  labs(title = 'Base without outlier')
+
+brain_tidyverse_plot_wo_outlier <-   
+  ggplot(data = brain_data_tidyverse[-c(19,33),], aes(x = Body_Wt, y= Brain_Wt)) +
+  geom_point(col = 'cornflowerblue', size = 3, shape = 19) +
+  labs(title = 'Tidyverse without outlier')
+
+
+
+ggarrange(brain_base_plot, brain_tidyverse_plot, 
+          brain_base_plot_wo_outlier, 
+          brain_tidyverse_plot_wo_outlier,
+          ncol = 2, nrow = 2)
+
+```
+
+
+
+
+
+
 
 
 d. Triplicate measurements of tomato yield for two varieties of tomatos at three planting densities.  
@@ -275,7 +380,6 @@ The values are grouped in the cells of the data above. Therefore, we should spli
 # Using base R function only
 # Need to split the values
 cells <- strsplit(unlist(tomato_rawdata), split = ',', fixed = T) # split the data
-categories <- unlist(c(cells[1],cells[2]))  # two categories
 values <- as.numeric(unlist(c(cells[3:8]))) # numerical data
 
 # Combine the split values into data frame
@@ -284,7 +388,7 @@ tomato_matrix <- t(cbind(tomato_matrix[1:2,], tomato_matrix[3:4,], tomato_matrix
 
 # Bind the data with the densities (categories)
 tomato_data <- data.frame(tomato_matrix, as.character(rep(c(10000,20000,30000), each=3)))
-colnames(tomato_data) <- c(categories, 'Density')
+colnames(tomato_data) <- c('IFE1', 'PusaEarlyDwarf','Density')
 tomato_data_base <- tomato_data
 
 # Final tidy data with base R functions
@@ -310,8 +414,8 @@ tomato_data <- tomato_rawdata[,-1] %>%
 dens <- rep(c(10000,20000,30000), each = 3) %>% as.character() # Densities
 
 # Bind the data with the densities vector
-tomato_data <- tomato_data %>% cbind(dens) %>% as.data.table()
-colnames(tomato_data) <- tomato_rawdata[,1] %>% unlist() %>% c("Density")
+tomato_data <- tomato_data %>% data.frame(dens)
+colnames(tomato_data) <- c('IFE1', 'PusaEarlyDwarf','Density')
 tomato_data_tidyverse <- tomato_data
 
 # Final tidy data with tidyverse
@@ -324,29 +428,36 @@ tomato_data_tidyverse
 knitr::kable(summary(tomato_data_tidyverse))
 ```
 
+Here are the histograms of above data based on both base R and tidyverse.
+
+```{r tomato_plots, echo = FALSE}
+# Histograms of tomato data
+
+hist_ife_base = ggplot(tomato_data_base, aes(x=IFE1)) + 
+  geom_histogram(binwidth = 1, fill=I("cornflowerblue"), col = I("black")) +
+  labs(title = 'Using Base R')
+
+hist_pusa_base = ggplot(tomato_data_base, aes(x=PusaEarlyDwarf)) + 
+  geom_histogram(binwidth = 2, fill=I("gold"), col = I("black")) +
+  labs(title = 'Using Base R')
+
+hist_ife_tidyverse = ggplot(tomato_data_tidyverse, aes(x=IFE1)) + 
+  geom_histogram(binwidth = 1, fill=I("cornflowerblue"), col = I("black")) +
+  labs(title = 'Using tidyverse')
+
+hist_pusa_tidyverse = ggplot(tomato_data_tidyverse, aes(x=PusaEarlyDwarf)) + 
+  geom_histogram(binwidth = 2, fill=I("gold"), col = I("black")) +
+  labs(title = 'Using tidyverse')
 
 
-## Problem 5
+ggarrange(hist_ife_base, hist_pusa_base, hist_ife_tidyverse, hist_pusa_tidyverse, ncol = 2, nrow = 2)
 
-Finish this homework by pushing your changes to your repo.  In general, your workflow for this should be:  
+```
 
-1. git pull -- to make sure you have the most recent repo  
-2. In R: do some work  
-3. git add -- this tells git to track new files  
-4. git commit -- make message INFORMATIVE and USEFUL  
-5. git push -- this pushes your local changes to the repo  
-
-If you have difficulty with steps 1-5, git is not correctly or completely setup.  See me for help.
-
-**Only submit the .Rmd and .pdf solution files.  Names should be formatted HW2_lastname.Rmd and HW2_lastname.pdf**
-
-## Optional preperation for next class:  
-
-TBD
 
 
 ## Appendix
-```{r Appendix, ref.label=c("setup","sensory_import", "sensory_base", "summary_sensory_base", "sensory_tidyverse", "summary_sensory_tidayverse", "medal_import", "medal_base", "summary_medal_base", "medal_tidyverse", "summary_medal_tidayverse", "brain_import", "brain_base", "summary_brain_base", "brain_tidyverse", "summary_brain_tidayverse", "tomato_import", "tomato_base", "summary_tomato_base", "tomato_tidyverse", "summary_tomato_tidayverse"), echo=TRUE, eval=FALSE, tidy=FALSE, include=T}
+```{r Appendix, ref.label=c("setup","sensory_import", "sensory_base", "summary_sensory_base", "sensory_tidyverse", "summary_sensory_tidayverse", "sensory_plots1", "sensory_plots2", "sensory_plots3", "medal_import", "medal_base", "summary_medal_base", "medal_tidyverse",  "summary_medal_tidayverse", "medal_plots", "brain_import", "brain_base", "summary_brain_base", "brain_tidyverse", "summary_brain_tidayverse", "brain_plots", "tomato_import", "tomato_base", "summary_tomato_base", "tomato_tidyverse", "summary_tomato_tidayverse", "tomato_plots"), echo=TRUE, eval=FALSE, tidy=FALSE, include=T}
   
 ```
 
