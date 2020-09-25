@@ -16,6 +16,9 @@ library(microbenchmark)
 
 Remember to adhere to both Reproducible Research and Good Programming Practices, ie describe what you are doing and comment/indent code where necessary.  
 
+# Check 5-a, 6
+5-a = You can easily check your result using dplyr's group_by and summarize.  
+6 = Now use a looping construct (for or while) to loop through possible slice widths.  Report the various slice widths used, the sum calculated, and the slice width necessary to obtain an answer within $1e^{-6}$ of the analytical solution.
 
   
 ## Problem 3
@@ -28,7 +31,7 @@ From *Hadley Wickam’s Style Guide*, I figured out how important the naming is.
 
 ## Problem 5
 
-A situation you may encounter is a data set where you need to create a summary statistic for each observation type.  Sometimes, this type of redundancy is perfect for a function.  Here, we need to create a single function which takes as input a two column dataframe and returns a vector containing
+We need to create a single function which takes as input a two column data frame and returns a vector containing
 
 1. mean of column 1
 2. mean of column 2
@@ -57,6 +60,7 @@ find_stats <- function(x){
 
 ```
 
+Now, apply the defined function above to data and get summary statistics
 
 ```{r apply_data}
 # Load data
@@ -91,8 +95,7 @@ However, to know whether the means and standard deviations are significantly dif
 
 
 
-### b. A box plot of dev, by Observer (*?boxplot*).  From these plots, what would you conclude?  
-
+### b. A box plot of dev, by Observer (*?boxplot*).  
 ```{r box}
 # Observers are categorical data
 devices$Observer <- devices$Observer %>% factor()
@@ -118,7 +121,7 @@ From the plots, we can notice that the overall dispersion of dev1 is smaller tha
 
 
 
-### c. A violin plot of dev by Observer (*??violin* two "?" will search through installed packages).  From these plots, what would you conclude?  Compared to the boxplot and summary statistics, thoughts?  
+### c. A violin plot of dev by Observer (*??violin* two "?" will search through installed packages).
 
 ```{r violin}
 # Violin plots of dev1 by Observer
@@ -135,25 +138,18 @@ violin_dev1
 violin_dev2
 
 ```
-Violin plots are alternatives of box plots. The lines of each violin are quartiles. The top line is $Q_3$, middle one is median, and the bottom is $Q_1$. Violin plots have more information than box plots. Not only they show quartiles, but also show the distributions of each Observer and device. We can notice the shape of each probability density by the violin plots.
- 
- 
- 
-Now that you have made some conclusions and decided what your analysis may look like, you decide to make one more plot:  
+Violin plots are alternatives of box plots. The lines of each violin are quartiles. The top line is $Q_3$, middle one is median, and the bottom is $Q_1$. Compared to box plots and summary statistics, violin plots have more information than box plots and summary statistics. Not only they show quartiles, but also show the distributions of each Observer and device. We can notice the shape of each probability density by the violin plots.
+
 
 ### d. a scatter plot of the data using ggplot, geom_points, and add facet_wrap on Observer.  For instance: `ggplot(df, aes(x=dev1,y=dev2)) + geom_point() + facet_wrap(Observer~.)`
 
-What do you see?  Combining the scatter plot with the summary statistics, what is the lesson here?  As you approach data analysis, what things should you do in the "Exploratory Data Analysis" portion of a project to avoid embarrassment from making erroneous conclusions?
-
 ```{r scatter}
-# Scatter plotss
+# Scatter plots
 ggplot(devices, aes(x=dev1,y=dev2)) + geom_point() + facet_wrap(Observer~.)
 
 
 ```
-Pretty amazing. It made me laugh because I did not expect these pictures. 
-
-I learned something from the scatter plots. When we conduct some "Exploratory Data Analysis", it is not enough to show summary statistics. Also, it is better to use various kinds of plots to look at data. 
+Pretty amazing. It made me laugh because I did not expect these pictures. I learned something from the scatter plots. When we conduct some "Exploratory Data Analysis", it is not enough to show summary statistics. Also, it is better to use various kinds of plots to look at data. As a takeaway, using many different plots to get more information is not redundant. It is rather useful to avoid embarrassment from making erroneous conclusions.
 
 
 
@@ -162,24 +158,64 @@ I learned something from the scatter plots. When we conduct some "Exploratory Da
 Some numerical methods are perfect candidates for functions.  Create a function that uses Riemann sums to approximate the integral:
 
 \begin{equation*}
-f(x) = \int_0^1 e^{-\frac{x^2}{2}}
+f(x) = \int_0^1 e^{-\frac{x^2}{2}} dx
 \end{equation*}
 
 The function should include as an argument the width of the slices used.  Now use a looping construct (for or while) to loop through possible slice widths.  Report the various slice widths used, the sum calculated, and the slice width necessary to obtain an answer within $1e^{-6}$ of the analytical solution.
 
-Note: use good programming practices.  For help on Riemann sums:  
-<https://www.khanacademy.org/math/ap-calculus-ab/ab-integration-new/ab-6-2/a/left-and-right-riemann-sums>
 
-
+Define a function to be integrated. Also, define a function to find Riemann sum of a function in general. By choosing `method` argument, we can apply left, right, or midpoint Riemann sum.
 ```{r riemann}
 ######## Problem 6 ########
-riemann_sum <- function(f){
-  # The input f is a function to be integrated
-  
+# Need to find \int_0^1 e^{-\frac{x^2}{2}} dx
+# Let f(x) = e^{-\frac{x^2}{2}}
+f <- function(x){
+  value <- exp(-(x^2/2))
+  return(value)
 }
+
+# Define a function to find Riemann sum
+riemann_sum <- function(f, x, width, method = 'left'){
+  # The input f is a function to be integrated
+  # The input x is an integration interval
+  # The input width is a width of each rectangle
+  # The input method is to choose Riemann sum among the left, right or midpoint sum
+  if(method == 'left'){
+    # Left Riemann sum
+    support <- seq(min(x),max(x), by = width) # Support of x
+    fx <- f(support[1:(length(support)-1)])   # Height of rectangles
+    integral <- width*sum(fx)                 # Left Riemann sum
+     
+  }else if(method == 'right'){
+    # Right Riemann sum
+    support <- seq(min(x),max(x), by = width) # Support of x
+    fx <- f(support[2:length(support)])       # Height of rectangles
+    integral <- width*sum(fx)                 # Right Riemann sum
+    
+  }else if(method == 'midpoint'){
+    support <- seq(min(x),max(x), by = width) # Support of x
+    support <- support - width/2              # To use midpoint as a domain
+    fx <- f(support[2:length(support)])       # Height of rectangles
+    integral <- width*sum(fx)                 # Right Riemann sum
+    
+  }else{
+    integral <- c('Not vaild method')
+  }
+  
+  return(integral)
+}
+ 
+
 
 
 ```
+Now, apply the function to calculate integrals using different widths.
+
+```{r riemann_apply}
+
+
+```
+
 
 
 
@@ -233,11 +269,10 @@ find_sol_newton <- function(x, tolerance){
 x0 <- -20:20
 tolerance <- .0001
 
-# Newton's method
-# Round at 4th decimal place and delete replicated solutions
+# Find roots and history of them using the defined function above
 newton_sol <- find_sol_newton(x0,tolerance)
-print("The roots"); newton_sol$Solution %>% round(digits = 4) %>% unique()
 
+# History of finding roots
 # Trace plot of finding solution
 # Trace plot of x with the smallest initial value
 history_x <- newton_sol$History_of_x              # Recorded history
@@ -254,10 +289,16 @@ for (i in 1:41){
 
 # History of finding roots
 traceplot 
+
+# Round roots at 4th decimal place and delete replicated solutions
+print("The roots"); newton_sol$Solution %>% round(digits = 4) %>% unique()
+
+
   
 
 
 ```
+The results above are trace plots and final roots. The plots show that how x values have changed and converged to solutions. The number of initial values are 40, but some of them converged into the same root, so the number of roots are less than initial values.
 
 
 ## Problem 8
@@ -294,6 +335,7 @@ find_sst_matrix <- function(y){
 
 ```
 
+We defined the functions above to find SST in different ways. One is using for loop and the other one only uses matrix operation. Now, apply these functions to data.
 
 
 ```{r find_sst}
@@ -318,7 +360,7 @@ From the result above, we can know that the functions have the same result, but 
 
 \pagebreak
 
-```{r appendix, ref.label=c('define_function', 'apply_data', 'table_summary', 'box', 'violin', 'scatter', 'riemann', 'newton', 'sim_data', 'sst_function', 'find_sst'), echo=TRUE, eval=FALSE, tidy=FALSE, include=T }
+```{r appendix, ref.label=c('define_function', 'apply_data', 'table_summary', 'box', 'violin', 'scatter', 'riemann', 'riemann_apply', 'newton', 'sst_function', 'find_sst'), echo=TRUE, eval=FALSE, tidy=FALSE, include=T }
 
 
 ```
