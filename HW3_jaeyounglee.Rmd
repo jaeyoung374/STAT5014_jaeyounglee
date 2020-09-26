@@ -16,11 +16,12 @@ library(microbenchmark)
 
 Remember to adhere to both Reproducible Research and Good Programming Practices, ie describe what you are doing and comment/indent code where necessary.  
 
-# Check 5-a, 6
-5-a = You can easily check your result using dplyr's group_by and summarize.  
-6 = Now use a looping construct (for or while) to loop through possible slice widths.  Report the various slice widths used, the sum calculated, and the slice width necessary to obtain an answer within $1e^{-6}$ of the analytical solution.
+## Problem 1
+I learned with Primers
 
-  
+## Problem 2
+New R markdown file
+
 ## Problem 3
 
 In the lecture, there were two links to programming style guides.  What is your takeaway from this and what specifically are _you_ going to do to improve your coding style?  
@@ -28,6 +29,10 @@ In the lecture, there were two links to programming style guides.  What is your 
 From *Google’s R Style Guide*, I learned naming objects and functions. Also, I found that using `::` is really helpful. The symbol helps us to avoid risk for name collisions. 
 From *Hadley Wickam’s Style Guide*, I figured out how important the naming is. The guide says file names should be meaningful, variable names should be nouns, and functions names should be verbs. For reproducible research, it is important to be easily readable. To improve readability, we need to care about indentation, spacing, and so on.
 
+## Problem 4
+Good programming practices start with this homework
+
+\pagebreak
 
 ## Problem 5
 
@@ -41,7 +46,7 @@ We need to create a single function which takes as input a two column data frame
 
 ```{r define_function}
 ######## Problem 5 ########
-# Define a function
+# Define a function using base R function
 find_stats <- function(x){
   # Find means, standards deviations and correlation of the columns from the data frame
   # The input x is a two column data frame
@@ -76,26 +81,38 @@ for (i in 1:max(devices$Observer)){
   # Find statistics of the data frame, and store the statistics in a single data frame
   summary_stats <- rbind(summary_stats, find_stats(devices_part[2:3]))
 }
-
 summary_stats <- data.frame(summary_stats)
 
+
+# We can conduct same procedure above with tidyverse
+summary_stats_tidyverse <- devices %>% group_by(Observer) %>% 
+  summarize(mean_dev1 = mean(dev1), mean_dev2 = mean(dev2),
+            sd_dev1 = sd(dev1), sd_dev2 = sd(dev2),
+            corr = cor(dev1, dev2), .groups = 'rowwise')
+  
 ```
 
+\pagebreak
 
-### a. A single table of the means, sd, and correlation for each of the 13 Observers (*?kable*).  From this table, what would you conclude?  You can easily check your result using dplyr's group_by and summarize.  
+### a. A single table of the means, sd, and correlation for each of the 13 Observers (*?kable*). 
 ```{r table_summary}
-knitr::kable(summary_stats)
+# Table of summary statistics  
+knitr::kable(summary_stats)            # With the defined function
+knitr::kable(summary_stats_tidyverse)  # With tidyverse
+
 ```
 
-From the table, we can see that the descriptive statistics (sample mean, sample standard deviations, and correlations) are similar for all Observers. Therefore, we can conclude that the distributions of dev1 and dev2 are almost identically distributed regardless of Observers. 
+The result of tables are the same. From the tables, we can see that the descriptive statistics (sample mean, sample standard deviations, and correlations) are similar for all Observers. Therefore, we can conclude that the distributions of dev1 and dev2 are almost identically distributed regardless of Observers. 
 
 Focusing on the statistics, the means of dev1 and dev2 seem to be different. The means of dev1 are larger than those of dev2. In contrast, the standard deviations of dev1 are smaller than those of dev2. From the correlations, we can notice that dev1 and dev2 have weak negative linear relationship. 
 
 However, to know whether the means and standard deviations are significantly different, we need some inferences for means and standard deviations.
 
+For the rest of parts, I will use `summary_stats` data frame.
 
+\pagebreak
 
-### b. A box plot of dev, by Observer (*?boxplot*).  
+### b. Box plots of dev1 and dev2s, by Observer.  
 ```{r box}
 # Observers are categorical data
 devices$Observer <- devices$Observer %>% factor()
@@ -110,8 +127,7 @@ boxplot_dev2 <- ggplot(devices, aes(x=Observer, y= dev2, fill = Observer)) +
   geom_boxplot() + 
   labs(title="Box plots of dev2 by Observers",x="Observers", y = "dev2")
 
-boxplot_dev1
-boxplot_dev2
+boxplot_dev1; boxplot_dev2
 
 ```
 The above plots are box plots of dev1 and dev2. The boxes are made of quartiles ($Q_1$, $Q_2$, and $Q_3$). The upper and bottom edges of the boxs are $Q_1$, and $Q_3$ each. The line in the middle of the boxes is median $Q_2$. The upper and bottom ends of the whiskers represent the largest or smallest observations within 1.5 IQR from the quartiles. The black circle of Observer 4 from the dev1 box plot represents the outlier of the data. 
@@ -119,9 +135,10 @@ The above plots are box plots of dev1 and dev2. The boxes are made of quartiles 
 From the plots, we can notice that the overall dispersion of dev1 is smaller than that of dev2. Also, we can see the distributions of dev1 and dev2 more clearly than just looking at the summary statistics.
 
 
+\pagebreak
 
 
-### c. A violin plot of dev by Observer (*??violin* two "?" will search through installed packages).
+### c. Violin plots of dev1 and dev2 by Observer.
 
 ```{r violin}
 # Violin plots of dev1 by Observer
@@ -134,12 +151,12 @@ violin_dev2 <- ggplot(devices, aes(x=Observer, y= dev2, fill = Observer)) +
   geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) + 
   labs(title="Violin plots of dev2 by Observers",x="Observers", y = "dev2")
 
-violin_dev1
-violin_dev2
+violin_dev1; violin_dev2
 
 ```
 Violin plots are alternatives of box plots. The lines of each violin are quartiles. The top line is $Q_3$, middle one is median, and the bottom is $Q_1$. Compared to box plots and summary statistics, violin plots have more information than box plots and summary statistics. Not only they show quartiles, but also show the distributions of each Observer and device. We can notice the shape of each probability density by the violin plots.
 
+\pagebreak
 
 ### d. a scatter plot of the data using ggplot, geom_points, and add facet_wrap on Observer.  For instance: `ggplot(df, aes(x=dev1,y=dev2)) + geom_point() + facet_wrap(Observer~.)`
 
@@ -151,6 +168,8 @@ ggplot(devices, aes(x=dev1,y=dev2)) + geom_point() + facet_wrap(Observer~.)
 ```
 Pretty amazing. It made me laugh because I did not expect these pictures. I learned something from the scatter plots. When we conduct some "Exploratory Data Analysis", it is not enough to show summary statistics. Also, it is better to use various kinds of plots to look at data. As a takeaway, using many different plots to get more information is not redundant. It is rather useful to avoid embarrassment from making erroneous conclusions.
 
+
+\pagebreak
 
 
 ## Problem 6 
@@ -212,12 +231,30 @@ riemann_sum <- function(f, x, width, method = 'left'){
 Now, apply the function to calculate integrals using different widths.
 
 ```{r riemann_apply}
+# Need to find \int_0^1 e^{-\frac{x^2}{2}} dx
+# Apply different width
+rectangle_width = c(.1, .01, .001, .0001)
 
+# Apply various Riemann sum  which are left, right and midpoint sums
+x <- c(0,1) # Integration interval
+
+result <- c('Left_sum', 'Midpoint_sum', 'Right_sum')
+for(i in 1:4){
+  result_riemann <- 
+    c(riemann_sum(f, x, width = rectangle_width[i], method = 'left'), 
+               riemann_sum(f, x, width = rectangle_width[i], method = 'midpoint'),
+               riemann_sum(f, x, width = rectangle_width[i], method = 'right')
+    )
+  result <- data.frame(result, result_riemann)
+}
+names(result) <- c('Method', 'Width_0.1', 'Width_0.01', 'Width_0.001', 'Width_0.0001')
+result
 
 ```
 
+The value with calculator is $0.855624$. We can see that the results of the `riemann_sum` function is almost same to the our expected result. Also, as the width of rectangles become smaller, the Riemann_sum values become closer to $0.855624$. Therefore, we can conclude that the defined `riemann_sum` function works well.
 
-
+\pagebreak
 
 ## Problem 7
 
@@ -300,6 +337,7 @@ print("The roots"); newton_sol$Solution %>% round(digits = 4) %>% unique()
 ```
 The results above are trace plots and final roots. The plots show that how x values have changed and converged to solutions. The number of initial values are 40, but some of them converged into the same root, so the number of roots are less than initial values.
 
+\pagebreak
 
 ## Problem 8
 
