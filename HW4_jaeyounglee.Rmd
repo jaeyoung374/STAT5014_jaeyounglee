@@ -65,6 +65,8 @@ lmfit$coefficients
 ```  
 The outputs above are result of Gradient Descent and simple linear regression. Tolerance is $1e-9$ and the step size $\alpha$ is $1e-7$. The starting values for the Gradient descent algorithm are generated from uniform random numbers. From the outputs we can notice that the estimates for $\Theta_0$ of two methods are quite different. On the other hand, $\Theta_1$ values are quite similar. We expected that two methods have similar results. The difference might come from initial values and the step size $\alpha$. If we use different initial values and step size, then they will have similar result. Thus, in *Problem 3* we will generate 10000 initial values. 
 
+\pagebreak
+
 
 ## Problem 3
 
@@ -135,8 +137,8 @@ names(gradient_result) <- c('no_iter', 'theta0_start', 'theta1_start', 'theta0',
 head(gradient_result)
 
 # Minimum and maximum number of iteration, their initial values and theta estimates
-gradient_result %>% filter(no_iter == min(no_iter))
-gradient_result %>% filter(no_iter == max(no_iter))
+gradient_result %>% filter(no_iter == min(no_iter)) %>% head()
+gradient_result %>% filter(no_iter == max(no_iter)) %>% head()
 
 # Mean of theta estimates
 gradient_result %>% select(theta0, theta1) %>% apply(2, mean)  %>% data.frame
@@ -176,11 +178,9 @@ what are you to do??  Can you explain what is going on?
 
 The above equation is from linear regression. In R, there are `lm` function to find the regression coefficients. However, we can use `solve` function and find the coefficients. Also, instead of using `t` function, `crossprod` function works faster. Therefore, the command `solve(crosprod(x), crossprod(x,y))` would work well.
 
-
+\pagebreak
 
 ## Problem 5: Need for speed challenge
-
-In this problem, we are looking to compute the following:
 
 \begin{equation}
 y = p + A B^{-1} (q - r)
@@ -355,7 +355,7 @@ sapply((31:40)/100,  coinflip)
 The newly defined function is coin flipping function based on given probabilities. Using `sapply`
  function, we can easily make matrix with the custom function. The matrix is an output of `sapply` and the custom function.
 
-
+\pagebreak
 
 ## Problem 4
   
@@ -400,4 +400,292 @@ for(i in 1:2){
 
 
 ```
+
+\pagebreak
+
+## Problem 5
+
+
+
+## Problem 2 Bootstrapping
+
+Recall the sensory data from five operators:    
+<http://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat> 
+
+What we want to do is bootstrap the Sensory data to get non-parametric estimates of the parameters.  We are really only interested in a linear model lm(y~operator).
+
+### Part a.  First, the question asked in the stackexchange was why is the supplied code not working.  This question was actually never answered.  What is the problem with the code?  If you want to duplicate the code to test it, use the quantreg package to get the data.
+```{r stack, eval = FALSE}
+# From the Stackexchange
+#create df from AAPL returns and market returns
+df08<-cbind(logapple08,logrm08)
+set.seed(666)
+Boot_times=1000
+sd.boot=rep(0,Boot)
+for(i in 1:Boot){
+# nonparametric bootstrap
+bootdata=df08[sample(nrow(df08), size = 251, replace = TRUE),]
+sd.boot[i]= coef(summary(lm(logapple08~logrm08, data = bootdata)))[2,2]
+}
+
+```
+
+First of all, the object name `Boot` is not defined. If the problem appears, there must be mistakes using the random seed. Also, the writer did not use the object `Boot_times`.
+
+
+### Part b. Bootstrap the analysis to get the parameter estimates using 100 bootstrapped samples.  Make sure to use system.time to get total time for the analysis.  You should probably make sure the samples are balanced across operators, ie each sample draws for each operator.
+```{r sensory}
+# Bootstrap 
+
+######## Sensory data ########
+# Getting "https://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat"
+url_sensory <- "https://www2.isye.gatech.edu/~jeffwu/wuhamadabook/data/Sensory.dat"
+sensory_rawdata <- fread(url_sensory, fill = TRUE, skip = 2, data.table = FALSE)
+saveRDS(sensory_rawdata, 'sensory_rawdata.RDS')
+sensory_rawdata <- readRDS('sensory_rawdata.RDS')
+# Sensory data with tidyverse package
+# Making matrix which is the same with base R function but using pipes.
+matrix_sensory <- sensory_rawdata %>% as.matrix() %>% t() 
+na <- is.na(matrix_sensory==TRUE) %>% which()     # Find missing values
+
+# The indexes where Item numbers are in the data
+x <- 1
+item <- x
+for (i in 1:9){
+  x <- x+18
+  item <- c(item, x)
+}
+
+# Remove missing values and Item numbers from the data
+Values <- matrix_sensory[-c(na,item)]
+
+# Bind the values with 'Item' and 'Operator' columns
+Item <- paste('Item', 1:10) %>% rep(each = 15)   # Item names
+Opr <- paste('Opr', 1:5) %>% rep(30)             # Operator names
+sensory_data_tidyverse <- data.table(Item, Opr, Values)
+
+# Final tidy data with tidyverse
+sensory_data_tidyverse %>% head()
+
+
+```
+
+```{r boot}
+# Regression with bootstrap
+sensory <- sensory_data_tidyverse %>% select(Values, Opr) # We only need item (y) and operator (x)
+n <- nrow(sensory) # Sample size
+no_boot <- 100     # The number of bootstrap samples 
+
+betas <- NULL      # Each boostrap regression coefficients
+
+# Bootstrap regression
+for(i in 1:no_boot){
+  boot_data <- sensory[sample(n, size = n, replace = TRUE), ]
+  lmfit <- lm(Values ~ Opr, data = boot_data)
+  betas <- rbind(betas, lmfit$coefficients)
+}
+
+beta_hat <- apply(betas, 2, mean) # Bootstrap regression coefficients
+
+# Linear regression for original data
+linear_model <- lm(Values ~ Opr, data = sensory)
+
+# Comparison of coefficients
+linear_model$coefficients # Linear regression 
+beta_hat                  # Boostrap regression
+
+# Elapsed time
+time_boot <- system.time({
+  betas <- NULL      # Each boostrap regression coefficients
+  # Bootstrap regression
+  for(i in 1:no_boot){
+    boot_data <- sensory[sample(n, size = n, replace = TRUE), ]
+    lmfit <- lm(Values ~ Opr, data = boot_data)
+    betas <- rbind(betas, lmfit$coefficients)
+  }
+  beta_hat <- apply(betas, 2, mean) # Bootstrap regression coefficients
+})
+
+```
+From the output, we can know than the regression coefficients for both methods are quite similar. Therefore, bootstrap works well with linear regression even though it does not assume any distribution.
+
+
+### Part c. Redo the last problem but run the bootstraps in parallel (`cl <- makeCluster(8)`), don't forget to `stopCluster(cl)`).  Why can you do this?  Make sure to use system.time to get total time for the analysis.
+
+Create a single table summarizing the results and timing from part a and b.  What are your thoughts?
+
+
+```{r boot_parallel}
+# Bootstrap Regression with parallel computing
+# Make cluster of cores
+cores <- 8
+cl <- makeCluster(cores)
+registerDoParallel(cl)     
+
+# Making advantage of parallel computing
+# Collect the interesting information from foreach
+boot_parallel <- foreach(i=1:n, .combine = rbind) %dopar% {
+  boot_data <- sensory[sample(n, size = n, replace = TRUE), ]
+  lmfit <- lm(Values ~ Opr, data = boot_data)
+  lmfit$coefficients
+}
+# Stop the cluster
+stopCluster(cl)
+
+
+beta_hat_parallel <- apply(boot_parallel, 2, mean)
+
+
+# Linear regression for original data
+linear_model <- lm(Values ~ Opr, data = sensory)
+
+# Comparison of coefficients
+linear_model$coefficients # Linear regression 
+beta_hat                  # Bootstrap regression
+beta_hat_parallel         # Bootstrap regression with parallel computing
+
+
+# Computing time comparison
+# Make cluster of cores
+cores <- 8
+cl <- makeCluster(cores)
+registerDoParallel(cl)     
+
+# Elapsed time
+time_boot_parallel <- system.time({
+  # Making advantage of parallel computing
+  # Collect the interesting information from foreach
+  boot_parallel <- foreach(i=1:n, .combine = rbind) %dopar% {
+    boot_data <- sensory[sample(n, size = n, replace = TRUE), ]
+    lmfit <- lm(Values ~ Opr, data = boot_data)
+    lmfit$coefficients
+  }
+})
+# Stop the cluster
+  stopCluster(cl)
+
+# Compare computing time
+time_boot
+time_boot_parallel
+
+
+```
+From the result, we can know that all three methods have quite similar regression coefficients. This means that bootstrap works well for original method and with parallel computing. To compare the elapsed time, it seems that computing times are also similar for both methods. There are several reasons. First of all, the sample size is not big. Also, the number of bootstrap samples are also not big. If both sample size and the number of bootstrap samples are large enough, then the parallel computing shows much faster time than the original method.
+
+\pagebreak
+
+## Problem 3
+
+Newton's method gives an answer for a root.  To find multiple roots, you need to try different starting values.  There is no guarantee for what start will give a specific root, so you simply need to try multiple.  From the plot of the function in HW4, problem 8, how many roots are there?
+
+Create a vector (`length.out=1000`) as a "grid" covering all the roots and extending +/-1 to either end.  
+
+### Part a.  Using one of the apply functions, find the roots noting the time it takes to run the apply function.
+
+My code from the previous homework and revised for this homework.
+```{r newton}
+# f(x) = 3^x - sin(x) + cos(5*x)
+int_f <- function(x){
+  value <- 3^x - sin(x) + cos(5*x)
+  return(value)
+}
+
+# f'(x) = 3^x*log(3) - cos(x) - 5*sin(5*x)
+f_prime <- function(x){
+  value <- 3^x*log(3) - cos(x) - 5*sin(5*x)
+  return(value)
+}
+
+
+# Define the function to run Newton's method
+find_sol_newton <- function(x, interesting = int_f, deriv_fun = f_prime){
+  # Input x is the initial value to begin the algorithm, t is tolerance
+  # Initial values
+  x_new <- x     # Initial value to operate Newton's method
+  x_old <- 100 # Initial value to operate while loop
+  no_iter <- 1   # Number of iteration of the loop
+  
+  # Newton's Method
+  # When x is a vector, break the loop when FALSE for all values in x 
+  while(all(abs(x_new-x_old) > 0.0001) & no_iter < 100000){
+  x_old <- x_new                               # Update new x value
+  x_new <- x_old - int_f(x_old)/f_prime(x_old)     # Newton's method formula
+  no_iter <- no_iter + 1                       # Count the number of iteration
+  }
+  return(x_new) # Roots 
+}
+
+# Multiple initial values
+x0 <- seq(-100, 0, length.out = 1000)
+
+# Find roots 
+newton_sol <- sapply(x0, find_sol_newton)
+# Round roots at 2nd decimal place and delete replicated solutions
+newton_roots <- newton_sol %>% round(digits = 2) %>% unique() %>% sort()
+print("The roots"); newton_roots 
+
+# Elapsed time
+time_newton <- system.time({
+  newton_sol <- sapply(x0, find_sol_newton)
+  newton_roots <- newton_sol %>% round(digits = 2) %>% unique() %>% sort()
+  print("The roots"); newton_roots 
+})
+
+time_newton
+
+# Graph of the function
+ggplot(data = data.frame(x = 0), mapping = aes(x=x)) +
+  stat_function(fun= int_f, color = 'brown', size = 1) +
+  geom_hline(yintercept = 0) + xlim(-100,1) + ylim(-3,3) +
+  labs(title="Graph of the function", x ="x", y = "y")
+  
+  
+```
+It seems that the function has infinite number of roots. If we limit the supports of x $x \in \{-100, 0\}$, then we have $161$ roots. The number of roots will increase if we wider the supports of x and initial values. The time elapsed when using `sapply` is 0.02
+
+\pagebreak
+
+### Part b.  Repeat the apply command using the equivelant parApply command.  Use 8 workers.  `cl <- makeCluster(8)`.
+```{r parapply}
+# Make cluster of cores
+cores <- 8
+cl <- makeCluster(cores)
+clusterExport(cl, c('int_f', 'f_prime'))
+
+# Parallelize
+# Find roots 
+parallel_sol <- parSapply(cl, -100:0, find_sol_newton, interesting = int_f, deriv_fun = f_prime)
+# Round roots at 2nd decimal place and delete replicated solutions
+parallel_roots <- parallel_sol %>% round(digits = 2) %>% unique() %>% sort()
+print("The roots"); parallel_roots 
+
+
+# Elapsed time
+time_parallel <- 
+system.time({
+  parallel_sol <- parSapply(cl, x0, find_sol_newton, interesting = int_f, deriv_fun = f_prime)
+  parallel_roots <- parallel_sol %>% round(digits = 2) %>% unique() %>% sort()
+  print("The roots"); parallel_roots
+})
+
+time_parallel
+
+# Stop the cluster
+stopCluster(cl)
+
+```
+It seems that parallel computing is almost similar the original one.
+
+
+### Create a table summarizing the roots and timing from both parts a and b.  What are your thoughts?
+
+```{r compare_newton}
+# Comparison of two methods
+# Compare the roots
+knitr::kable(cbind(newton_roots, parallel_roots), caption = 'Roots of both method')
+knitr::kable(cbind(time_newton, time_parallel), caption = 'Elapsed time')
+```
+
+From the table, we can know that the roots for both methods are the same. For the elapsed time, both methods are similar. This is because the original method is quite fast. If we add some computations and conditions for the original algorithm, the difference will be large, so that parallel compution will be faster.
+
 
