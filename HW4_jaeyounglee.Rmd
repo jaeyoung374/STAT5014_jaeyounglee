@@ -393,9 +393,20 @@ scatter <- function(devices, observer = 1, col1 = 'brown', col2 = 'black',
 }
 
 # Single scatter plot and a scatter plot by observers
-for(i in 1:2){
-  scatter(devices, i, col2 = i)
-}
+scatter(devices, 1, col2 = 1)
+scatter(devices, 2, col2 = 2)
+scatter(devices, 3, col2 = 3)
+scatter(devices, 4, col2 = 4)
+scatter(devices, 5, col2 = 5)
+scatter(devices, 6, col2 = 6)
+scatter(devices, 7, col2 = 7)
+scatter(devices, 8, col2 = 8)
+scatter(devices, 9, col2 = 9)
+scatter(devices, 10, col2 = 10)
+scatter(devices, 11, col2 = 11)
+scatter(devices, 12, col2 = 12)
+scatter(devices, 13, col2 = 13)
+
 
 
 
@@ -404,6 +415,17 @@ for(i in 1:2){
 \pagebreak
 
 ## Problem 5
+
+Part a. Get and import a database of US cities and states.  
+
+```{r us_map}
+# Load data
+states <- fread(input = "./us_cities_and_states/states.sql",skip = 23,
+                sep = "'", sep2 = ",", header = F, select = c(2,4))
+cities <- fread(input = "./us_cities_and_states/cities_extended.sql",skip = 23,
+                sep = "'", sep2 = ",", header = F, select = c(2,4))
+  
+```
 
 
 
