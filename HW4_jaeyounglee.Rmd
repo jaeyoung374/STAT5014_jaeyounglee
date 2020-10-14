@@ -418,16 +418,115 @@ scatter(devices, 13, col2 = 13)
 
 Part a. Get and import a database of US cities and states.  
 
-```{r us_map}
+```{r us}
 # Load data
 states <- fread(input = "./us_cities_and_states/states.sql",skip = 23,
                 sep = "'", sep2 = ",", header = F, select = c(2,4))
 cities <- fread(input = "./us_cities_and_states/cities_extended.sql",skip = 23,
                 sep = "'", sep2 = ",", header = F, select = c(2,4))
   
+head(states) # states data
+head(cities) # cities data
+```
+
+Part b. Create a summary table of the number of cities included by state.
+
+```{r number_of_cities}
+# Find the number of cities by states
+knitr::kable(table(cities$V4), col.names = c('States', 'Cities'))
+
 ```
 
 
+Part c. Create a function that counts the number of occurrences of a letter in a string.  The input to the function should be "letter" and "state_name".  
+
+```{r occur}
+# A function that couns the number of occurrences of a letter in a string
+count_letter <- function(letter, state_name){
+  # Count the number of occurrences of a letter in a string
+  # Split the state name
+  split_name <- unlist(strsplit(state_name,''))
+  
+  # Determine whether to count the big letter
+  capital <- LETTERS[letters == letter]
+  if(split_name[1] == capital){
+    split_name[1] <- letter
+  }
+  
+  # Find the letter from the string and count the occurrences
+  counted <- sum(split_name == letter)
+  
+  return(counted)
+}
+
+```
+
+Create a for loop to loop through the state names imported in part a.  Inside the for loop, use an apply family function to iterate across a vector of letters and collect the occurrence count as a vector.
+
+```{r occur_loop}
+# Count with for loop
+# Collect the counts to the data frame
+letter_count <- data.frame(matrix(NA,nrow=nrow(states), ncol=26))
+names(letter_count) <- letters # Columns names
+
+# Collect the counts
+for(i in 1:nrow(states)){
+  letter_count[i,] <- sapply(letters, count_letter, state_name = states$V2[i])
+}
+
+# Data frame of Counts
+letter_count
+
+```
+
+
+Part d.
+
+Create 2 maps to finalize this.  Map 1 should be colored by count of cities on our list within the state.  Map 2 should highlight only those states that have more than 3 occurances of ANY letter in thier name.
+
+
+Quick and not so dirty map:
+
+```{r eval=F, echo=T, include=T}
+
+# https://remiller1450.github.io/s230s19/Intro_maps.html
+library(maps)
+states %>% inner_join(cities, by = "V4")
+substring('abcdefg', 2)
+
+# US map data
+mainstates <- map_data('state')
+
+# Change the states names with capital letter
+for(i in 1:nrow(states)){
+  mainstates$region[substring(mainstates$region, 2) == substring(states$V2[i], 2)] = states$V2[i]
+}
+
+
+
+    #https://cran.r-project.org/web/packages/fiftystater/vignettes/fiftystater.html
+    library(ggplot2)
+    
+    map_data('state')
+    
+    crimes <- data.frame(state = tolower(rownames(USArrests)), USArrests)
+    # map_id creates the aesthetic mapping to the state name column in your data
+    p <- ggplot(crimes, aes(map_id = state)) + 
+      # map points to the fifty_states shape data
+      geom_map(aes(fill = Assault), map = fifty_states) + 
+      expand_limits(x = fifty_states$long, y = fifty_states$lat) +
+      coord_map() +
+      scale_x_continuous(breaks = NULL) + 
+      scale_y_continuous(breaks = NULL) +
+      labs(x = "", y = "") +
+      theme(legend.position = "bottom", 
+            panel.background = element_blank())
+    
+    #ggsave(plot = p, file = "HW6_Problem6_Plot_Settlage.pdf")
+```
+
+
+\pagebreak
 
 ## Problem 2 Bootstrapping
 
