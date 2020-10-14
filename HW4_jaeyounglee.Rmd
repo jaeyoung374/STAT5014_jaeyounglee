@@ -1,0 +1,403 @@
+---
+title: "HW4_jaeyounglee"
+author: "Jaeyoung Lee"
+date: \today
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(data.table)
+library(doParallel)
+library(parallel)
+library(ggplot2)
+library(ggpubr)
+```
+
+## Problem 2
+
+Given $\mathbf{X}$ and $\vec{h}$ below, implement the above algorithm and compare the results with lm(h~0+$\mathbf{X}$).  State the tolerance used and the step size, $\alpha$.
+
+```{r gradient}
+# Random seed and true values
+set.seed(1256)
+theta <- as.matrix(c(1,2),nrow=2) # True parameter (theta_0, theta_1)
+X <- cbind(1,rep(1:10,10))        # Design matrix
+h <- X%*%theta+rnorm(100,0,0.2)   # True y value
+
+# Parameters for the algorithm
+tolerance <- 1e-9                 # Tolerance
+alpha <- 1e-7                     # Step size
+result <- NULL                    # Collect interesting information
+
+
+# Set initial values
+initial_value <-c(runif(1,0,2), runif(1,1,3)) # Initial value of theta
+theta_new <- initial_value                    # Initial value of theta
+theta_old <- c(10,10)                         # Initial value to operate loop
+no_iter <- 1                                  # Number of iterations
+  
+# Gradient Descent algorithm
+# If both theta values are smaller than tolerance, than it converges
+while(all(abs(theta_new - theta_old) > tolerance) & no_iter < 5e+6 ){
+  # Update new x value
+  theta_old <- theta_new
+  
+  # Gradient Descent formula
+  theta_new[1] <- theta_old[1] - alpha/length(h) * sum(X%*%theta_old - h) 
+  theta_new[2] <- theta_old[2] - alpha/length(h) * sum((X%*%theta_old - h)*X[,2])
+  
+  # Count the number of iteration
+  no_iter <- no_iter + 1
+}
+# Collect iterations, initial values used, estimated theta
+result <- rbind(result, c(no_iter, initial_value, theta_new))
+result <- result %>% data.frame
+names(result) <- c('no_iter', 'theta_0_start', 'theta_1_start', 
+                   'theta_0', 'theta_1')
+result
+
+# Comparison with lm function
+lmfit <- lm(h~0+X) # Fitting with simple linear regression
+lmfit$coefficients
+  
+```  
+The outputs above are result of Gradient Descent and simple linear regression. Tolerance is $1e-9$ and the step size $\alpha$ is $1e-7$. The starting values for the Gradient descent algorithm are generated from uniform random numbers. From the outputs we can notice that the estimates for $\Theta_0$ of two methods are quite different. On the other hand, $\Theta_1$ values are quite similar. We expected that two methods have similar results. The difference might come from initial values and the step size $\alpha$. If we use different initial values and step size, then they will have similar result. Thus, in *Problem 3* we will generate 10000 initial values. 
+
+
+## Problem 3
+
+### Part a. Making sure to take advantages of parallel computing opportunities. 
+
+```{r gradient_parallel, eval=FALSE}
+# Random seed and true values
+set.seed(1256)
+theta <- as.matrix(c(1,2),nrow=2) # True parameter (theta_0, theta_1)
+X <- cbind(1,rep(1:10,10))        # Design matrix
+h <- X%*%theta+rnorm(100,0,0.2)   # True y value
+m <- length(h)                    # length of y (To speed up)
+
+# Parameters for the algorithm
+tolerance <- 1e-9                 # Tolerance
+alpha <- 1e-7                     # Step size
+
+# Generate 10000 initial values
+n <- 10000                         # The number of initial value vector
+initial_value <- cbind(runif(n,0,2), runif(n,1,3))
+
+# Speed up using parallel computing
+cores <- detectCores() - 1 # Use almost all the cores
+cl <- makeCluster(cores)   # Create a cluster via makeCluster
+registerDoParallel(cl)     # Register the cluster
+
+# Making advantage of parallel computing
+# Collect the interesting information from foreach
+gradient_result <- foreach(init=1:n, .combine = rbind) %dopar% {
+  # Set initial values
+  theta_new <- initial_value[init,]  # Initial value of theta
+  theta_old <- c(10,10)              # Initial value to operate loop
+  no_iter <- 1                       # Number of iterations
+  
+  # Gradient Descent algorithm
+  # If both theta values are smaller than tolerance, than it converges
+  while(all(abs(theta_new - theta_old) > tolerance) & no_iter < 5e+6 ){
+    # Update new x value
+    theta_old <- theta_new
+    h0 <- X%*%theta_old
+    
+    # Gradient Descent formula
+    theta_new[1] <- theta_old[1] - alpha/m * sum(h0 - h) 
+    theta_new[2] <- theta_old[2] - alpha/m * sum((h0 - h)*X[,2])
+    
+    # Count the number of iteration
+    no_iter <- no_iter + 1
+  }
+  c(no_iter, initial_value[init,], theta_new)
+}
+
+# Stop the cluster
+stopCluster(cl)
+
+# Save R Data
+save.image(file = 'gradient_descent.RData')
+
+```
+
+
+```{r parallel_result}
+# Load R Data
+load(file = 'gradient_descent.RData')
+
+# Make data frame of the result
+gradient_result <- gradient_result %>% data.frame()
+names(gradient_result) <- c('no_iter', 'theta0_start', 'theta1_start', 'theta0', 'theta1')
+head(gradient_result)
+
+# Minimum and maximum number of iteration, their initial values and theta estimates
+gradient_result %>% filter(no_iter == min(no_iter))
+gradient_result %>% filter(no_iter == max(no_iter))
+
+# Mean of theta estimates
+gradient_result %>% select(theta0, theta1) %>% apply(2, mean)  %>% data.frame
+
+# Standard deviation of theta estimates
+gradient_result %>% select(theta0, theta1) %>% apply(2, sd) %>%  data.frame
+
+
+
+
+```
+From the output, we can know that some initial values do not work well. The minimum number of iteration is $2$ with 25 cases. It means that the algorithm fails to work with the given initial values. The maximum number of iteration is $5M$ with 66 cases. It means than the algorithm did not converge with the given initial values. However, they are extreme cases among $10000$ simulations. From the mean of $10000$ samples, the estimates are similar to the true value $\Theta_0 = 1$, and $\Theta_1 = 2$. Therefore, the algorithm converges well to the true parameters. To compare the standard deviations, the standard deviation of $\Theta_0$ is larger than that of $\Theta_1$.
+
+In addition, using parallel computing, it truly becomes faster.
+
+
+### Part b. 
+
+When we assume certain true values, we can conduct simulations using the assumed values like the result above. In practical situation, we do not know the true values. This means that it is impossible to put the true value into the stopping rule. However, we can conduct 'Explanatory Data Analysis', so from the result from EDA, we can generate random numbers based on the summary statistics. Then, it will have desirable result.
+
+
+
+### Part c. 
+
+The Gradient Descent algorithm we used here can be used as an alternative way of estimating parameters. It is similar to Newton's method. The Gradient Descent is already a popular algorithm, but it requires heavy computation and highly rely on initial values and step size. Therefore, in my opinion, the algorithm is good but need to be careful when we use it.
+
+
+## Problem 4: Inverting matrices
+
+Ok, so John Cook makes some good points, but if you want to do:
+
+\begin{equation*}
+\hat\beta = (X'X)^{-1}X'\underline{y}
+\end{equation*}
+
+what are you to do??  Can you explain what is going on?
+
+The above equation is from linear regression. In R, there are `lm` function to find the regression coefficients. However, we can use `solve` function and find the coefficients. Also, instead of using `t` function, `crossprod` function works faster. Therefore, the command `solve(crosprod(x), crossprod(x,y))` would work well.
+
+
+
+## Problem 5: Need for speed challenge
+
+In this problem, we are looking to compute the following:
+
+\begin{equation}
+y = p + A B^{-1} (q - r)
+\end{equation}
+
+Where A, B, p, q and r are formed by:
+
+```{r data, echo=T, eval=F, include=T}
+
+    set.seed(12456) 
+    
+    G <- matrix(sample(c(0,0.5,1),size=16000,replace=T),ncol=10)
+    R <- cor(G) # R: 10 * 10 correlation matrix of G
+    C <- kronecker(R, diag(1600)) # C is a 16000 * 16000 block diagonal matrix
+    id <- sample(1:16000,size=932,replace=F)
+    q <- sample(c(0,0.5,1),size=15068,replace=T) # vector of length 15068
+    A <- C[id, -id] # matrix of dimension 932 * 15068
+    B <- C[-id, -id] # matrix of dimension 15068 * 15068
+    p <- runif(932,0,1)
+    r <- runif(15068,0,1)
+    C<-NULL #save some memory space
+```
+
+Part a.
+
+How large (bytes) are A and B?  Without any optimization tricks, how long does the it take to calculate y?
+
+```{r speedup, eval=FALSE}
+
+    set.seed(12456) 
+    
+    G <- matrix(sample(c(0,0.5,1),size=16000,replace=T),ncol=10)
+    R <- cor(G) # R: 10 * 10 correlation matrix of G
+    C <- kronecker(R, diag(1600)) # C is a 16000 * 16000 block diagonal matrix
+    id <- sample(1:16000,size=932,replace=F)
+    q <- sample(c(0,0.5,1),size=15068,replace=T) # vector of length 15068
+    A <- C[id, -id] # matrix of dimension 932 * 15068
+    B <- C[-id, -id] # matrix of dimension 15068 * 15068
+    p <- runif(932,0,1)
+    r <- runif(15068,0,1)
+    C<-NULL #save some memory space
+
+    # How big are A and B?
+    size_A <- object.size(A)
+    size_B <- object.size(B)
+    
+    # Elapsed time computing y
+    computing_time_y <- system.time(p + A%*%solve(B, (q-r)))
+    
+    # Save R Data
+    save.image(file = 'need_for_speed.RData')
+    
+```
+
+```{r eval_speedup, echo = FALSE}
+load(file = 'need_for_speed.RData')    
+
+# How big are A and B?
+paste('Size of A = ', size_A, 'Byte') 
+paste('Size of B = ', size_B, 'Byte') 
+    
+# Elapsed time computing y
+print('Original computing time')
+computing_time_y
+
+```
+As we can see, the sizes of A and B are large. Also, the computing time is about nine minutes.  
+
+
+Part b.
+
+The object sizes of $A$ and $B$ matrices are too large. However, they are have a lot of zero elements. Using this fact, we can reduce the object sizes of them using a package named `Matrix`. Using the package we can make the matrices be sparse and reduce the sizes. Since $B$ matrix is too large, it is hard to make it to be sparse. However, if we partition the matrix, we can make the block matrices to be sparse. It is easy to partition and combine matrices. Therefore, it will take much less time than original computation.
+
+
+Part c.
+
+```{r need_for_speed}
+# Need for speed challenge
+library(Matrix) # Using Sparse Matrix
+# Load R Data
+load(file = 'need_for_speed.RData')
+
+# Speed up by making matrices sparse to reduce the object sizes
+computing_time_speedup <- system.time({
+  A_sparse <- Matrix(A, sparse = TRUE) # Same matrix but reduce the data size
+  #B_sparse <- Matrix(B, sparse = TRUE)
+
+  # Make four block matrices of B and be sparse
+  B_sparse_11 <- Matrix(B[1:7534, 1:7534], sparse = TRUE)
+  B_sparse_12 <- Matrix(B[1:7534, 7535:15068], sparse = TRUE)
+  B_sparse_21 <- Matrix(B[7535:15068, 1:7534], sparse = TRUE)
+  B_sparse_22 <- Matrix(B[7535:15068, 7535:15068], sparse = TRUE)
+
+  # Sparse matrix of B
+  B_sparse <- rbind(cbind(B_sparse_11, B_sparse_12), cbind(B_sparse_21, B_sparse_22))
+
+  p + A_sparse%*%solve(B_sparse, (q-r)) # Same formula with original one
+})
+
+computing_time_y       # original computing time
+computing_time_speedup # Speed up computing time
+
+
+```
+From `Matrix` package, there is a function `Matrix`. The function has an argument that make a matrix which has a lot of zeros be sparse, so it can reduce the object size of the matrix. Therefore, using sparse matrices, the computing time is much more faster than the original one.
+
+
+
+## Problem 3  
+
+a. 
+
+```{r proportion}
+# Define a function that computes the proportion of successes in a vector
+
+prop_success <- function(x, success = 1){
+  # The vector x has binary outcomes : 0 = fail, 1 = success
+  # Define 'Success' argument what value you want to define as success (Character or numeric)
+  x[x == success] <- 1          # Change success to 1
+  
+  # Proportion of success
+  if(mode(x) == 'character'){
+    prop <- sum(as.numeric(x[x == '1']))/length(x)  # Change the type of data
+  }else{
+    prop <- sum(x[x == 1])/length(x)                # Sample proportion
+  }
+  return(prop)
+}
+
+# Example using the function
+set.seed(10122020)
+bin_outcome <- sample(c('f','s'), size = 100, replace = TRUE) # Binary outcomes 
+prop_success(bin_outcome, 's') # Proportion of success
+
+```
+The defined function above computes the proportion of successes in a vector. The function is made for any type of vector. The function accept both numeric and character vector with binary outcomes. 
+
+
+b.  
+```{r coins}
+# A matrix to simulate 10 flips of a coin with varying degrees of "fairness"
+set.seed(12345)
+P4b_data <- matrix(rbinom(10, 1, prob = (31:40)/100), nrow = 10, ncol = 10, byrow = FALSE)
+colnames(P4b_data) <- c('.31', '.32', '.33', '.34', '.35', '.36', '.37', '.38', '.39', '.40')
+P4b_data
+
+```
+Above is a pre-defined matrix from the problem to simulate 10 flips of a coin with varying degrees of "fairness"
+
+
+c.
+```{r apply_function}
+# Apply function with the custum function
+apply(P4b_data, 2, prop_success)
+
+```
+It seems working well. The function brings correct result.
+
+
+d. 
+```{r prob_to_flip}
+# Coinflip function based on given probabilities
+coinflip <- function(p, n = 10){
+  # The input n is the number of flips and p is probability
+  flips <- sample(c(0,1), size = n, prob = c(1-p, p), replace = TRUE)
+  return(flips)
+}
+# Apply the function on a probability vector using sapply
+sapply((31:40)/100,  coinflip)
+
+```
+The newly defined function is coin flipping function based on given probabilities. Using `sapply`
+ function, we can easily make matrix with the custom function. The matrix is an output of `sapply` and the custom function.
+
+
+
+## Problem 4
+  
+```{r dev_data}
+# Load data
+# Multiple repeated measurements from two devices (dev1 and dev2) by thirteen Observers. 
+devices <- readRDS('HW3_data.rds')
+names(devices) <- c('Observer', 'x', 'y')
+
+# A function of data frame
+scatter <- function(devices, observer = 1, col1 = 'brown', col2 = 'black', 
+                    main = 'Scatter plot of X and Y'){
+  # The inputs are data, observer #, title of plot, and colors
+  # Choose colors of single plot and a plot of observer
+  # We can choose a scatter plot of certain observer we want to see
+  
+  # This function is Based on ggplot2, tidyverse, ggpubr package
+  require(ggplot2)
+  require(tidyverse)
+  require(ggpubr)
+  
+  # A single scatter plot of the entire dataset
+  singleplot <- ggplot(data = devices, aes(x=x, y=y)) + 
+    geom_point(col = col1, size = 3, shape = 19) + 
+    labs(title = main)
+  
+  # A separate scatter plot using the apply function
+  devices_obs <- devices %>% filter(Observer == observer) # Part of data by observer
+  separateplot <- ggplot(data = devices_obs, aes(x=x, y=y)) + 
+    geom_point(col = col2, size = 3, shape = 19) +
+    labs(title = paste('Scatter plot of X & Y of Obs', observer))
+  
+  ggarrange(singleplot, separateplot, ncol=2)
+
+}
+
+# Single scatter plot and a scatter plot by observers
+for(i in 1:2){
+  scatter(devices, i, col2 = i)
+}
+
+
+
+```
+
