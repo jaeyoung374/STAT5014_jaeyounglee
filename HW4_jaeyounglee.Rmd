@@ -15,9 +15,7 @@ library(ggplot2)
 library(ggpubr)
 ```
 
-## Problem 2
-
-Given $\mathbf{X}$ and $\vec{h}$ below, implement the above algorithm and compare the results with lm(h~0+$\mathbf{X}$).  State the tolerance used and the step size, $\alpha$.
+## Problem 2 Given $\mathbf{X}$ and $\vec{h}$ below, implement the above algorithm and compare the results with lm(h~0+$\mathbf{X}$).  State the tolerance used and the step size, $\alpha$.
 
 ```{r gradient}
 # Random seed and true values
@@ -43,22 +41,28 @@ while(all(abs(theta_new - theta_old) > tolerance) & no_iter < 5e+6 ){
   # Update new x value
   theta_old <- theta_new
   
-  # Gradient Descent formula
+  # Gradient Descent formula, update the values
   theta_new[1] <- theta_old[1] - alpha/length(h) * sum(X%*%theta_old - h) 
   theta_new[2] <- theta_old[2] - alpha/length(h) * sum((X%*%theta_old - h)*X[,2])
   
   # Count the number of iteration
-  no_iter <- no_iter + 1
+  no_iter <- no_iter + 1 
 }
+
 # Collect iterations, initial values used, estimated theta
 result <- rbind(result, c(no_iter, initial_value, theta_new))
 result <- result %>% data.frame
 names(result) <- c('no_iter', 'theta_0_start', 'theta_1_start', 
                    'theta_0', 'theta_1')
+
+# Number of iterations, initial values, estimates
 result
 
 # Comparison with lm function
-lmfit <- lm(h~0+X) # Fitting with simple linear regression
+# Fitting with simple linear regression
+lmfit <- lm(h~0+X) 
+
+# Regression coefficients
 lmfit$coefficients
   
 ```  
@@ -95,6 +99,7 @@ registerDoParallel(cl)     # Register the cluster
 # Making advantage of parallel computing
 # Collect the interesting information from foreach
 gradient_result <- foreach(init=1:n, .combine = rbind) %dopar% {
+  
   # Set initial values
   theta_new <- initial_value[init,]  # Initial value of theta
   theta_old <- c(10,10)              # Initial value to operate loop
@@ -126,11 +131,11 @@ save.image(file = 'gradient_descent.RData')
 ```
 
 
-```{r parallel_result}
+```{r gradient_parallel_result}
 # Load R Data
 load(file = 'gradient_descent.RData')
 
-# Make data frame of the result
+# Make data frame of the parallel computing result
 gradient_result <- gradient_result %>% data.frame()
 names(gradient_result) <- c('no_iter', 'theta0_start', 'theta1_start', 'theta0', 'theta1')
 head(gradient_result)
@@ -144,8 +149,6 @@ gradient_result %>% select(theta0, theta1) %>% apply(2, mean)  %>% data.frame
 
 # Standard deviation of theta estimates
 gradient_result %>% select(theta0, theta1) %>% apply(2, sd) %>%  data.frame
-
-
 
 
 ```
@@ -235,6 +238,7 @@ How large (bytes) are A and B?  Without any optimization tricks, how long does t
 ```
 
 ```{r eval_speedup, echo = FALSE}
+# Load R Data
 load(file = 'need_for_speed.RData')    
 
 # How big are A and B?
@@ -265,7 +269,6 @@ load(file = 'need_for_speed.RData')
 # Speed up by making matrices sparse to reduce the object sizes
 computing_time_speedup <- system.time({
   A_sparse <- Matrix(A, sparse = TRUE) # Same matrix but reduce the data size
-  #B_sparse <- Matrix(B, sparse = TRUE)
 
   # Make four block matrices of B and be sparse
   B_sparse_11 <- Matrix(B[1:7534, 1:7534], sparse = TRUE)
@@ -273,7 +276,7 @@ computing_time_speedup <- system.time({
   B_sparse_21 <- Matrix(B[7535:15068, 1:7534], sparse = TRUE)
   B_sparse_22 <- Matrix(B[7535:15068, 7535:15068], sparse = TRUE)
 
-  # Sparse matrix of B
+  # B matrix which the object size reduced
   B_sparse <- rbind(cbind(B_sparse_11, B_sparse_12), cbind(B_sparse_21, B_sparse_22))
 
   p + A_sparse%*%solve(B_sparse, (q-r)) # Same formula with original one
@@ -293,7 +296,6 @@ From `Matrix` package, there is a function `Matrix`. The function has an argumen
 a. 
 ```{r proportion}
 # Define a function that computes the proportion of successes in a vector
-
 prop_success <- function(x, success = 1){
   # The vector x has binary outcomes : 0 = fail, 1 = success
   # Define 'Success' argument what value you want to define as success (Character or numeric)
@@ -390,6 +392,10 @@ scatter <- function(devices, observer = 1, col1 = 'brown', col2 = 'black',
 
 }
 
+```
+
+
+```{r scatterplots}
 # Single scatter plot and a scatter plot by observers
 scatter(devices, 1, col2 = 1)
 scatter(devices, 2, col2 = 2)
@@ -404,8 +410,6 @@ scatter(devices, 10, col2 = 10)
 scatter(devices, 11, col2 = 11)
 scatter(devices, 12, col2 = 12)
 scatter(devices, 13, col2 = 13)
-
-
 
 
 ```
@@ -429,6 +433,8 @@ cities <- cities %>% unique()
 head(states) # states data
 head(cities) # cities data
 ```
+
+\pagebreak
 
 Part b. Create a summary table of the number of cities included by state.
 
@@ -490,13 +496,13 @@ letter_count
 
 ```
 
+\pagebreak
 
 Part d. Create 2 maps to finalize this. Map 1 should be colored by count of cities on our list within the state. Map 2 should highlight only those states that have more than 3 occurrences of ANY letter in their name.
 
 ```{r map1}
 # Create a map colored by count of cities within the state
 # Reference : https://remiller1450.github.io/s230s19/Intro_maps.html
-
 # Import US map
 library(maps)
 
@@ -504,7 +510,7 @@ library(maps)
 us_map <- map_data('state')
 
 # Change the states names starting with capital letter
-# Names behind spaces
+# Names behind spaces from names with more than two words. 
 divided_states_small <- c('columbia', 'hampshire', 'jersey', 'mexico', 
                           'york', 'carolina', 'dakota', 'island', 'virginia')
 divided_states_big <- c('Columbia', 'Hampshire', 'Jersey', 'Mexico', 
@@ -535,6 +541,7 @@ ggplot() +
     
 ```
 
+\pagebreak
 
 ```{r map2}
 # Create a map highlight only those states that have more than 3 occurrences of ANY letter in their name
@@ -544,7 +551,6 @@ more_than_three <- data.frame(letter_count>3)
 # States that letter counts are larger than 3
 letter_count_states <- states$V2 %>% data.frame(apply(more_than_three , 1, sum))
 names(letter_count_states) <- c('region', 'letter_count')
-
 
 # Join the counts with us_map data
 territory_letter_count <- us_map %>% inner_join(letter_count_states, by = 'region')
@@ -788,8 +794,13 @@ time_newton <- system.time({
   print("The roots"); newton_roots 
 })
 
-time_newton
+time_newton # Elapsed time
 
+```
+
+\pagebreak
+
+```{r graph}
 # Graph of the function
 ggplot(data = data.frame(x = 0), mapping = aes(x=x)) +
   stat_function(fun= f, color = 'brown', size = 1) +
@@ -833,6 +844,7 @@ stopCluster(cl)
 ```
 It seems that parallel computing is almost similar the original one.
 
+\pagebreak
 
 ### Create a table summarizing the roots and timing from both parts a and b.  What are your thoughts?
 
@@ -840,6 +852,7 @@ It seems that parallel computing is almost similar the original one.
 # Comparison of two methods
 # Compare the roots
 knitr::kable(cbind(newton_roots, parallel_roots), caption = 'Roots of both method')
+# Compare the elapsed times
 knitr::kable(cbind(time_newton, time_parallel), caption = 'Elapsed time')
 ```
 
@@ -847,5 +860,6 @@ From the table, we can know that the roots for both methods are the same. For th
 
 \pagebreak
 
-```{r appendix, ref.label=c(), echo = T, eval=FALSE, include=T}
+# Appendix
+```{r appendix, ref.label=knitr::all_labels(), echo = T, eval=FALSE, include=T}
 ```
