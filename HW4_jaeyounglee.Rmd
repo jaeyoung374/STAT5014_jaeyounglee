@@ -31,7 +31,6 @@ tolerance <- 1e-9                 # Tolerance
 alpha <- 1e-7                     # Step size
 result <- NULL                    # Collect interesting information
 
-
 # Set initial values
 initial_value <-c(runif(1,0,2), runif(1,1,3)) # Initial value of theta
 theta_new <- initial_value                    # Initial value of theta
@@ -292,7 +291,6 @@ From `Matrix` package, there is a function `Matrix`. The function has an argumen
 ## Problem 3  
 
 a. 
-
 ```{r proportion}
 # Define a function that computes the proportion of successes in a vector
 
@@ -424,7 +422,10 @@ states <- fread(input = "./us_cities_and_states/states.sql",skip = 23,
                 sep = "'", sep2 = ",", header = F, select = c(2,4))
 cities <- fread(input = "./us_cities_and_states/cities_extended.sql",skip = 23,
                 sep = "'", sep2 = ",", header = F, select = c(2,4))
-  
+
+# Remove duplicated data
+cities <- cities %>% unique()
+
 head(states) # states data
 head(cities) # cities data
 ```
@@ -432,8 +433,18 @@ head(cities) # cities data
 Part b. Create a summary table of the number of cities included by state.
 
 ```{r number_of_cities}
+# Join states and cities data
+# Exclude Puerto Rico
+states_cities <- states %>% inner_join(cities, by = "V4") 
+names(states_cities) <- c('region', 'code', 'city')
+
 # Find the number of cities by states
-knitr::kable(table(cities$V4), col.names = c('States', 'Cities'))
+# The number of cities in a state 
+count_cities <- states_cities %>% select(region, city) %>% 
+  group_by(region) %>% summarise(num_cities = n(), .groups = 'rowwise')
+
+# Table of the number of cities by states
+knitr::kable(count_cities, col.names = c('States', 'Cities'))
 
 ```
 
@@ -480,49 +491,74 @@ letter_count
 ```
 
 
-Part d.
+Part d. Create 2 maps to finalize this. Map 1 should be colored by count of cities on our list within the state. Map 2 should highlight only those states that have more than 3 occurrences of ANY letter in their name.
 
-Create 2 maps to finalize this.  Map 1 should be colored by count of cities on our list within the state.  Map 2 should highlight only those states that have more than 3 occurances of ANY letter in thier name.
+```{r map1}
+# Create a map colored by count of cities within the state
+# Reference : https://remiller1450.github.io/s230s19/Intro_maps.html
 
-
-Quick and not so dirty map:
-
-```{r eval=F, echo=T, include=T}
-
-# https://remiller1450.github.io/s230s19/Intro_maps.html
+# Import US map
 library(maps)
-states %>% inner_join(cities, by = "V4")
-substring('abcdefg', 2)
 
 # US map data
-mainstates <- map_data('state')
+us_map <- map_data('state')
 
-# Change the states names with capital letter
-for(i in 1:nrow(states)){
-  mainstates$region[substring(mainstates$region, 2) == substring(states$V2[i], 2)] = states$V2[i]
+# Change the states names starting with capital letter
+# Names behind spaces
+divided_states_small <- c('columbia', 'hampshire', 'jersey', 'mexico', 
+                          'york', 'carolina', 'dakota', 'island', 'virginia')
+divided_states_big <- c('Columbia', 'Hampshire', 'Jersey', 'Mexico', 
+                        'York', 'Carolina', 'Dakota', 'Island', 'Virginia')
+# Change the names behind spaces starting with capital letter
+for (i in 1:length(divided_states_small)){
+  us_map$region <- gsub(divided_states_small[i],divided_states_big[i],us_map$region) 
 }
 
+# Change the names staring with capital letter
+for(i in 1:nrow(states)){
+  us_map$region[substring(us_map$region, 2) == substring(states$V2[i], 2)] <-  states$V2[i]
+}
+
+# Join the count_cities with us_map data by region
+# Exclude Alaska and Hawaii
+territory <- us_map %>% inner_join(count_cities, by = 'region')
+
+# Color the map of The United States
+ggplot() + 
+  geom_polygon(data= territory, 
+               aes(x = long, y = lat, group = group, fill = num_cities), 
+               color="white", size = 0.2) +
+  labs(title = 'The Map of The United States', 
+       subtitle = 'Colored by count of cities within the state')
+  
+
+    
+```
 
 
-    #https://cran.r-project.org/web/packages/fiftystater/vignettes/fiftystater.html
-    library(ggplot2)
-    
-    map_data('state')
-    
-    crimes <- data.frame(state = tolower(rownames(USArrests)), USArrests)
-    # map_id creates the aesthetic mapping to the state name column in your data
-    p <- ggplot(crimes, aes(map_id = state)) + 
-      # map points to the fifty_states shape data
-      geom_map(aes(fill = Assault), map = fifty_states) + 
-      expand_limits(x = fifty_states$long, y = fifty_states$lat) +
-      coord_map() +
-      scale_x_continuous(breaks = NULL) + 
-      scale_y_continuous(breaks = NULL) +
-      labs(x = "", y = "") +
-      theme(legend.position = "bottom", 
-            panel.background = element_blank())
-    
-    #ggsave(plot = p, file = "HW6_Problem6_Plot_Settlage.pdf")
+```{r map2}
+# Create a map highlight only those states that have more than 3 occurrences of ANY letter in their name
+# Find the counts larger than 3
+more_than_three <- data.frame(letter_count>3)
+
+# States that letter counts are larger than 3
+letter_count_states <- states$V2 %>% data.frame(apply(more_than_three , 1, sum))
+names(letter_count_states) <- c('region', 'letter_count')
+
+
+# Join the counts with us_map data
+territory_letter_count <- us_map %>% inner_join(letter_count_states, by = 'region')
+# Handle the counts as discrete
+territory_letter_count$letter_count <- territory_letter_count$letter_count %>% as.factor
+
+# Highlight only those states that have more than 3 occurrences of ANY letter in their name
+ggplot() + 
+  geom_polygon(data= territory_letter_count, 
+               aes(x = long, y = lat, group = group, fill = letter_count), 
+               color="white", size = 0.2) +
+  labs(title = 'The Map of The United States', 
+       subtitle = 'Highlighted states that have more than 3 counts of any letter in their name') + 
+  scale_fill_manual(values=c("gray", "dodgerblue4", "brown2"))
 ```
 
 
@@ -706,7 +742,7 @@ Create a vector (`length.out=1000`) as a "grid" covering all the roots and exten
 My code from the previous homework and revised for this homework.
 ```{r newton}
 # f(x) = 3^x - sin(x) + cos(5*x)
-int_f <- function(x){
+f <- function(x){
   value <- 3^x - sin(x) + cos(5*x)
   return(value)
 }
@@ -719,7 +755,7 @@ f_prime <- function(x){
 
 
 # Define the function to run Newton's method
-find_sol_newton <- function(x, interesting = int_f, deriv_fun = f_prime){
+find_sol_newton <- function(x, interesting = f, deriv_fun = f_prime){
   # Input x is the initial value to begin the algorithm, t is tolerance
   # Initial values
   x_new <- x     # Initial value to operate Newton's method
@@ -730,7 +766,7 @@ find_sol_newton <- function(x, interesting = int_f, deriv_fun = f_prime){
   # When x is a vector, break the loop when FALSE for all values in x 
   while(all(abs(x_new-x_old) > 0.0001) & no_iter < 100000){
   x_old <- x_new                               # Update new x value
-  x_new <- x_old - int_f(x_old)/f_prime(x_old)     # Newton's method formula
+  x_new <- x_old - f(x_old)/f_prime(x_old)     # Newton's method formula
   no_iter <- no_iter + 1                       # Count the number of iteration
   }
   return(x_new) # Roots 
@@ -756,7 +792,7 @@ time_newton
 
 # Graph of the function
 ggplot(data = data.frame(x = 0), mapping = aes(x=x)) +
-  stat_function(fun= int_f, color = 'brown', size = 1) +
+  stat_function(fun= f, color = 'brown', size = 1) +
   geom_hline(yintercept = 0) + xlim(-100,1) + ylim(-3,3) +
   labs(title="Graph of the function", x ="x", y = "y")
   
@@ -771,11 +807,11 @@ It seems that the function has infinite number of roots. If we limit the support
 # Make cluster of cores
 cores <- 8
 cl <- makeCluster(cores)
-clusterExport(cl, c('int_f', 'f_prime'))
+clusterExport(cl, c('f', 'f_prime'))
 
 # Parallelize
 # Find roots 
-parallel_sol <- parSapply(cl, -100:0, find_sol_newton, interesting = int_f, deriv_fun = f_prime)
+parallel_sol <- parSapply(cl, -100:0, find_sol_newton, interesting = f, deriv_fun = f_prime)
 # Round roots at 2nd decimal place and delete replicated solutions
 parallel_roots <- parallel_sol %>% round(digits = 2) %>% unique() %>% sort()
 print("The roots"); parallel_roots 
@@ -784,7 +820,7 @@ print("The roots"); parallel_roots
 # Elapsed time
 time_parallel <- 
 system.time({
-  parallel_sol <- parSapply(cl, x0, find_sol_newton, interesting = int_f, deriv_fun = f_prime)
+  parallel_sol <- parSapply(cl, x0, find_sol_newton, interesting = f, deriv_fun = f_prime)
   parallel_roots <- parallel_sol %>% round(digits = 2) %>% unique() %>% sort()
   print("The roots"); parallel_roots
 })
@@ -809,4 +845,7 @@ knitr::kable(cbind(time_newton, time_parallel), caption = 'Elapsed time')
 
 From the table, we can know that the roots for both methods are the same. For the elapsed time, both methods are similar. This is because the original method is quite fast. If we add some computations and conditions for the original algorithm, the difference will be large, so that parallel compution will be faster.
 
+\pagebreak
 
+```{r appendix, ref.label=c(), echo = T, eval=FALSE, include=T}
+```
