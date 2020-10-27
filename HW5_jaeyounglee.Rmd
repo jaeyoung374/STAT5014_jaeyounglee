@@ -1,0 +1,124 @@
+---
+title: "HW5_jaeyounglee"
+author: "Jaeyoung Lee"
+date: \today
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+```
+
+This week, we spoke about Exploratory Data Analysis and plotting. To begin the homework, we will as usual, start by loading, munging and  creating tidy data sets.  In this homework, our goal is to create informative (and perhaps pretty) plots showing features or perhaps deficiencies in the data.
+
+## Problem 1
+
+Mission Complete
+
+## Problem 2
+
+Mission Complete
+
+## Problem 3
+
+Using tidy concepts, get and clean the following data on education from the World Bank.
+
+<http://databank.worldbank.org/data/download/Edstats_csv.zip>
+
+How many data points were there in the complete dataset?  In your cleaned dataset?
+
+Choosing 2 countries, create a summary table of indicators for comparison.
+
+```{r worldbank}
+### Choose two countries by random sampling ###
+set.seed(1000292)
+country <- 
+  fread(input = "./Edstats/EdStatsCountry.csv", header = TRUE) %>% 
+  select('Country Code')
+sample_country <- sample(country$`Country Code`, size = 2) 
+sample_country # South Korea and Greece
+
+### Load data ###
+edstats <- fread(input = "./Edstats/EdStatsData.csv", header = TRUE)
+dim(edstats) # Dimension of raw data
+names(edstats) = c('country', 'code_country', 
+                   'indicator', 'code_indicator',
+                   1970:2017, seq(2020, 2100, by = 5), 'V70') # Rename the columns
+edstats <- edstats %>% select(-4, -(53:70)) # Remove future and indicator code
+
+### Choose two countries ###
+edstats_kor <- edstats %>% filter(code_country == sample_country[1]) # South Korea
+edstats_grc <- edstats %>% filter(code_country == sample_country[2]) # Greece
+
+### Gather the data and remove missing values ###
+gather_kor <- edstats_kor %>% 
+  gather(key = "year", value = "n", 4:51) %>% 
+  filter(!is.na(n)) 
+
+gather_grc <- edstats_grc %>% 
+  gather(key = "year", value = "n", 4:51) %>% 
+  filter(!is.na(n)) 
+
+#### Spread data and remove redundant variables ###
+spread_kor <- gather_kor %>% spread(key = indicator, value = n) # %>% names
+
+spread_grc <- gather_grc %>% 
+  mutate(find_total = str_detect(indicator, 'total'), 
+         find_ale = str_detect(indicator, 'ale')) %>% 
+  filter(find_total == TRUE, find_ale == FALSE) %>% 
+  select(-find_total, -find_ale) %>% 
+  spread(key = indicator, value = n) # %>% names
+
+# Find columns that have more than 10 missing values
+nuisance_col_kor <- NULL
+for(i in 1:ncol(spread_kor)){
+  column <- spread_kor %>% select(i)
+  count_missing <- sum(is.na(column))
+  if(count_missing > 10){
+    nuisance_col_kor <- c(nuisance_col_kor, i)
+  }
+}
+length(nuisance_col_kor)
+
+
+# Remove redundant variables again
+spread_kor %>% select(-nuisance_col_kor) %>% names
+  
+
+
+
+```
+
+
+
+## Problem 4
+
+Using *base* plotting functions, create a single figure that is composed of the first two rows of plots from SAS's simple linear regression diagnostics as shown here: <https://support.sas.com/rnd/app/ODSGraphics/examples/reg.html>.  Demonstrate the plot using suitable data from problem 3.
+
+```{r base_plot}
+
+
+```
+
+
+## Problem 5
+
+Recreate the plot in problem 3 using ggplot2 functions.  Note: there are many extension libraries for ggplot, you will probably find an extension to the ggplot2 functionality will do exactly what you want.
+
+```{r ggplot}
+
+
+```
+
+
+## Problem 6
+
+Mission Complete
+
+## Appendix
+```{r appendix, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE, include=TRUE}
+```
