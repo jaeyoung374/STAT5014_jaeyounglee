@@ -123,13 +123,16 @@ names(interest_kor) <- c('year', 'gdp', 'gni')
 names(interest_grc) <- c('year', 'gdp', 'gni')
 
 # Fit simple linear model
+# Want to know the linear relationship between GDP and Year for each country
 lm_kor <- lm(gdp ~ year, data = interest_kor)
 lm_grc <- lm(gdp ~ year, data = interest_grc)
 
 # Model diagnostic plots
+# Korea
 par(mfrow = c(2,3))
 plot(lm_kor, 1:6)
 
+# Greece
 par(mfrow = c(2,3))
 plot(lm_grc, 1:6)
 
