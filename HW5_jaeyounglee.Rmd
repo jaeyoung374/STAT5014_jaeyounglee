@@ -6,14 +6,13 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(data.table)
 library(tidyverse)
 library(ggplot2)
+library(ggfortify)
 library(ggpubr)
 ```
-
-This week, we spoke about Exploratory Data Analysis and plotting. To begin the homework, we will as usual, start by loading, munging and  creating tidy data sets.  In this homework, our goal is to create informative (and perhaps pretty) plots showing features or perhaps deficiencies in the data.
 
 ## Problem 1
 
@@ -33,7 +32,7 @@ How many data points were there in the complete dataset?  In your cleaned datase
 
 Choosing 2 countries, create a summary table of indicators for comparison.
 
-```{r worldbank}
+```{r worldbank, message=FALSE}
 ### Choose two countries by random sampling ###
 set.seed(1000292)
 country <- 
@@ -64,53 +63,228 @@ gather_grc <- edstats_grc %>%
   filter(!is.na(n)) 
 
 #### Spread data and remove redundant variables ###
-spread_kor <- gather_kor %>% spread(key = indicator, value = n) # %>% names
+spread_kor <- gather_kor %>% spread(key = indicator, value = n) 
 
-spread_grc <- gather_grc %>% 
-  mutate(find_total = str_detect(indicator, 'total'), 
-         find_ale = str_detect(indicator, 'ale')) %>% 
-  filter(find_total == TRUE, find_ale == FALSE) %>% 
-  select(-find_total, -find_ale) %>% 
-  spread(key = indicator, value = n) # %>% names
+spread_grc <- gather_grc %>% spread(key = indicator, value = n) 
 
 # Find columns that have more than 10 missing values
-nuisance_col_kor <- NULL
+# Use South Korea data to make equivalent columns for both countries
+nuisance_col <- NULL
 for(i in 1:ncol(spread_kor)){
   column <- spread_kor %>% select(i)
   count_missing <- sum(is.na(column))
   if(count_missing > 10){
-    nuisance_col_kor <- c(nuisance_col_kor, i)
+    nuisance_col <- c(nuisance_col, i)
   }
 }
-length(nuisance_col_kor)
+
+# Find columns which name contain gender
+name_kor <- spread_kor %>% select(-nuisance_col) %>% names
+index_kor <- which(str_detect(name_kor, 'ale'))
+
+name_grc <- spread_grc %>% select(-nuisance_col) %>% names
+index_grc <- which(str_detect(name_grc, 'ale'))
+
+# Remove redundant variables
+tidy_kor <- spread_kor %>% select(-nuisance_col) %>% select(-index_kor) 
+tidy_grc <- spread_grc %>% select(-nuisance_col) %>% select(-index_grc)
 
 
-# Remove redundant variables again
-spread_kor %>% select(-nuisance_col_kor) %>% names
-  
+# Dimension of tidy datasets
+dim(tidy_kor) # Dimension of data for Korea
+dim(tidy_grc) # Dimension of data for Greece
 
+# Select indicators that we are interested in for each dataset
+interest_kor <- tidy_kor %>% select(3, 27, 29)
+interest_grc <- tidy_grc %>% select(3, 30, 31)
 
+# Make year as numeric
+interest_kor$year <-  as.numeric(interest_kor$year)
+interest_grc$year <-  as.numeric(interest_grc$year)
+
+# Summary table
+knitr::kable(summary(interest_kor), caption = 'Summary of indicators, Korea')
+knitr::kable(summary(interest_grc), caption = 'Summary of indicators, Greece')
 
 ```
 
+Two countries are sampled from the raw data. The tables are summary of tidy data sets with some interesting indicators. The dimension of data for Korea is $(47, 98)$ and that for Greece is $(47, 94)$.
 
+\pagebreak
 
 ## Problem 4
 
 Using *base* plotting functions, create a single figure that is composed of the first two rows of plots from SAS's simple linear regression diagnostics as shown here: <https://support.sas.com/rnd/app/ODSGraphics/examples/reg.html>.  Demonstrate the plot using suitable data from problem 3.
 
 ```{r base_plot}
+# Simple linear regression diagnostics using base R function
+# Make names simpler
+names(interest_kor) <- c('year', 'gdp', 'gni')
+names(interest_grc) <- c('year', 'gdp', 'gni')
+
+# Fit simple linear model
+lm_kor <- lm(gdp ~ year, data = interest_kor)
+lm_grc <- lm(gdp ~ year, data = interest_grc)
+
+# Model diagnostic plots
+par(mfrow = c(2,3))
+plot(lm_kor, 1:6)
+
+par(mfrow = c(2,3))
+plot(lm_grc, 1:6)
 
 
 ```
-
+\pagebreak
 
 ## Problem 5
 
 Recreate the plot in problem 3 using ggplot2 functions.  Note: there are many extension libraries for ggplot, you will probably find an extension to the ggplot2 functionality will do exactly what you want.
 
-```{r ggplot}
+```{r diagnostic_autoplot}
+# Simple linear regression diagnostics using ggplot2
+# Using autoplot
+# Reference : https://cran.r-project.org/web/packages/ggfortify/vignettes/plot_lm.html
+autoplot(lm_kor, 1:6, colour = 'dimgrey',
+         smooth.colour = 'brown', smooth.linetype = 'dashed',
+         ad.colour = 'blue',
+         label.size = 2, label.n = 5, label.colour = 'firebrick1',
+         ncol = 2)
+autoplot(lm_grc, 1:6, colour = 'grey',
+         smooth.colour = 'blue', smooth.linetype = 'dashed',
+         ad.colour = 'brown',
+         label.size = 2, label.n = 5, label.colour = 'firebrick1',
+         ncol = 2)
 
+
+```
+
+```{r korea}
+# Using ggplot
+# Reference : https://rpubs.com/therimalaya/43190
+# Korea
+
+# Residual plot
+plot_resid_kor <- ggplot(lm_kor, aes(.fitted, .resid)) +
+  geom_point() +
+  stat_smooth(method="loess") +
+  geom_hline(yintercept=0, col="red", linetype="dashed") + 
+  xlab("Fitted values")+ylab("Residuals") +
+  ggtitle("Residual vs Fitted Plot") +
+  theme_bw()
+
+# Normal Q-Q plot
+qq_kor <- ggplot(lm_kor, aes(sample = lm_kor$residuals)) +
+  stat_qq(size = 2) +
+  stat_qq_line(color = 'red')+
+  xlab("Theoretical Quantiles")+ylab("Standardized Residuals") +
+  ggtitle("Normal Q-Q") +
+  theme_bw()
+
+# Standardized residual plot
+plot_standard_resid_kor <- ggplot(lm_kor, aes(.fitted, sqrt(abs(.stdresid)))) +
+  geom_point(na.rm=TRUE) + 
+  stat_smooth(method="loess", na.rm = TRUE) + 
+  xlab("Fitted Value") + 
+  ylab(expression(sqrt("|Standardized residuals|"))) + 
+  ggtitle("Scale-Location") + 
+  theme_bw()
+
+# Cook's distance    
+cook_kor <- ggplot(lm_kor, aes(seq_along(.cooksd), .cooksd)) + 
+  geom_bar(stat="identity", position="identity") + 
+  xlab("Obs. Number") +
+  ylab("Cook's distance") +
+  ggtitle("Cook's distance")+theme_bw()
+    
+# Residual vs Leverage
+leverage_kor <- ggplot(lm_kor, aes(.hat, .stdresid)) +
+  geom_point(aes(size=.cooksd), na.rm=TRUE) +
+  stat_smooth(method="loess", na.rm=TRUE) +
+  xlab("Leverage") +
+  ylab("Standardized Residuals") +
+  ggtitle("Residual vs Leverage Plot") +
+  scale_size_continuous("Cook's Distance", range=c(1,5)) +
+  theme_bw() + 
+  theme(legend.position="bottom")
+    
+# Cook's distance vs Leverage
+lev_cook_kor <- ggplot(lm_kor, aes(.hat, .cooksd)) +
+  geom_point(na.rm=TRUE) +
+  stat_smooth(method="loess", na.rm=TRUE) + 
+  xlab("Leverage hii")+ylab("Cook's Distance") +
+  ggtitle("Cook's dist vs Leverage hii/(1-hii)") +
+  geom_abline(slope=seq(0,3,0.5), color="gray", linetype="dashed") +
+  theme_bw()
+
+# Diagnostic plot
+ggarrange(plot_resid_kor, qq_kor, 
+          plot_standard_resid_kor, cook_kor, 
+          leverage_kor, lev_cook_kor, nrow = 2, ncol = 3)
+
+```
+
+```{r greece}
+# Using ggplot
+# Greece
+
+# Residual plot
+plot_resid_grc <- ggplot(lm_grc, aes(.fitted, .resid)) +
+  geom_point() +
+  stat_smooth(method="loess") +
+  geom_hline(yintercept=0, col="red", linetype="dashed") + 
+  xlab("Fitted values")+ylab("Residuals") +
+  ggtitle("Residual vs Fitted Plot") +
+  theme_bw()
+    
+# Normal Q-Q plot
+qq_grc <- ggplot(lm_grc, aes(sample = lm_grc$residuals)) +
+  stat_qq(size = 2) +
+  stat_qq_line(color = 'red')+
+  xlab("Theoretical Quantiles")+ylab("Standardized Residuals") +
+  ggtitle("Normal Q-Q") +
+  theme_bw()
+
+# Standardized residual plot
+plot_standard_resid_grc <- ggplot(lm_grc, aes(.fitted, sqrt(abs(.stdresid)))) +
+  geom_point(na.rm=TRUE) + 
+  stat_smooth(method="loess", na.rm = TRUE) + 
+  xlab("Fitted Value") + 
+  ylab(expression(sqrt("|Standardized residuals|"))) + 
+  ggtitle("Scale-Location") + 
+  theme_bw()
+    
+# Cook's distance
+cook_grc <- ggplot(lm_grc, aes(seq_along(.cooksd), .cooksd)) + 
+  geom_bar(stat="identity", position="identity") + 
+  xlab("Obs. Number") +
+  ylab("Cook's distance") +
+  ggtitle("Cook's distance")+theme_bw()
+    
+# Residual vs Leverage plot
+leverage_grc <- ggplot(lm_grc, aes(.hat, .stdresid)) +
+  geom_point(aes(size=.cooksd), na.rm=TRUE) +
+  stat_smooth(method="loess", na.rm=TRUE) +
+  xlab("Leverage") +
+  ylab("Standardized Residuals") +
+  ggtitle("Residual vs Leverage Plot") +
+  scale_size_continuous("Cook's Distance", range=c(1,5)) +
+  theme_bw() + 
+  theme(legend.position="bottom")
+    
+# Cook's distance vs Leverage plot
+lev_cook_grc <- ggplot(lm_grc, aes(.hat, .cooksd)) +
+  geom_point(na.rm=TRUE) +
+  stat_smooth(method="loess", na.rm=TRUE) + 
+  xlab("Leverage hii")+ylab("Cook's Distance") +
+  ggtitle("Cook's dist vs Leverage hii/(1-hii)") +
+  geom_abline(slope=seq(0,3,0.5), color="gray", linetype="dashed") +
+  theme_bw()
+
+# Diagnostic plot
+ggarrange(plot_resid_grc, qq_grc, 
+          plot_standard_resid_grc, cook_grc, 
+          leverage_grc, lev_cook_grc, nrow = 2, ncol = 3)
 
 ```
 
@@ -118,6 +292,8 @@ Recreate the plot in problem 3 using ggplot2 functions.  Note: there are many ex
 ## Problem 6
 
 Mission Complete
+
+\pagebreak
 
 ## Appendix
 ```{r appendix, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE, include=TRUE}
