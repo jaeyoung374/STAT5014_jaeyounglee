@@ -129,13 +129,38 @@ lm_grc <- lm(gdp ~ year, data = interest_grc)
 
 # Model diagnostic plots
 # Korea
-par(mfrow = c(2,3))
-plot(lm_kor, 1:6)
+# Residaul plot and Q-Q plot
+par(mfcol = c(2,3))
+plot(lm_kor, 1:2)
+# Studentized residual vs fitted, Response vs fitted
+plot(lm_kor$fitted.values, MASS::studres(lm_kor), 
+     main = 'Studentized Residual vs Fitted',
+     xlab = 'Fitted Value',
+     ylab = 'Rstudent'); abline(h = 2); abline(h = -2)
+plot(lm_kor$fitted.values, lm_kor$model$gdp,
+     main = 'Response vs Fitted',
+     xlab = 'Fitted Value',
+     ylab = 'Response'); abline(a = 1, b = 1)
+# Cook's distance, Residual vs Leverage
+plot(lm_kor, 5)
+plot(lm_kor, 4)
 
 # Greece
-par(mfrow = c(2,3))
-plot(lm_grc, 1:6)
-
+# Residaul plot and Q-Q plot
+par(mfcol = c(2,3))
+plot(lm_grc, 1:2)
+# Studentized residual vs fitted, Response vs fitted
+plot(lm_grc$fitted.values, MASS::studres(lm_grc), 
+     main = 'Studentized Residual vs Fitted',
+     xlab = 'Fitted Value',
+     ylab = 'Rstudent'); abline(h = 2); abline(h = -2)
+plot(lm_grc$fitted.values, lm_grc$model$gdp,
+     main = 'Response vs Fitted',
+     xlab = 'Fitted Value',
+     ylab = 'Response'); abline(a = 1, b = 1)
+# Cook's distance, Residual vs Leverage
+plot(lm_grc, 5)
+plot(lm_grc, 4)
 
 ```
 \pagebreak
